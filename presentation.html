@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Claude Code Plugins — Engineering Session</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0d0d0d;
+    color: #e8e8e8;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* ── Slide container ── */
+  .deck {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 72px 96px;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  .slide.active {
+    display: flex;
+    opacity: 1;
+  }
+
+  /* ── Slide variants ── */
+  .slide-title {
+    background: radial-gradient(ellipse at 30% 50%, #1a1a2e 0%, #0d0d0d 70%);
+    align-items: center;
+    text-align: center;
+  }
+  .slide-section {
+    background: linear-gradient(135deg, #111827 0%, #0d0d0d 100%);
+    border-left: 5px solid #d97706;
+  }
+  .slide-content {
+    background: #111111;
+  }
+  .slide-demo {
+    background: #0f1117;
+    border-left: 5px solid #3b82f6;
+  }
+  .slide-compare {
+    background: #0f1117;
+  }
+  .slide-callout {
+    background: linear-gradient(135deg, #1c1c2e 0%, #0d0d0d 100%);
+    align-items: center;
+    text-align: center;
+  }
+
+  /* ── Typography ── */
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #d97706;
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+  .eyebrow.blue { color: #60a5fa; }
+  .eyebrow.green { color: #34d399; }
+  .eyebrow.purple { color: #a78bfa; }
+
+  h1 {
+    font-size: 56px;
+    font-weight: 800;
+    line-height: 1.1;
+    color: #f5f5f5;
+    letter-spacing: -1.5px;
+  }
+  h1 span { color: #d97706; }
+
+  h2 {
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #f0f0f0;
+    letter-spacing: -0.5px;
+    margin-bottom: 32px;
+  }
+
+  h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #c0c0c0;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    font-size: 20px;
+    color: #888;
+    margin-top: 16px;
+    max-width: 600px;
+    line-height: 1.6;
+  }
+
+  p {
+    font-size: 18px;
+    line-height: 1.7;
+    color: #c8c8c8;
+    max-width: 760px;
+  }
+
+  /* ── Code blocks ── */
+  code, pre {
+    font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+  }
+  pre {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 20px 24px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #d4d4d4;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .kw { color: #60a5fa; }
+  .fn { color: #fbbf24; }
+  .str { color: #34d399; }
+  .cmt { color: #555; font-style: italic; }
+  .hl { background: rgba(251,191,36,0.12); border-radius: 3px; padding: 0 2px; }
+  .bad { color: #f87171; }
+  .good { color: #34d399; }
+
+  code {
+    background: #1e1e1e;
+    border: 1px solid #2a2a2a;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 15px;
+    color: #fbbf24;
+  }
+
+  /* ── Layout helpers ── */
+  .cols {
+    display: grid;
+    gap: 32px;
+    width: 100%;
+    align-items: start;
+  }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .cols-60-40 { grid-template-columns: 60fr 40fr; }
+  .cols-40-60 { grid-template-columns: 40fr 60fr; }
+
+  /* ── Cards ── */
+  .card {
+    background: #1a1a1a;
+    border: 1px solid #252525;
+    border-radius: 12px;
+    padding: 24px 28px;
+  }
+  .card-orange { border-top: 3px solid #d97706; }
+  .card-blue   { border-top: 3px solid #3b82f6; }
+  .card-purple { border-top: 3px solid #a78bfa; }
+  .card-green  { border-top: 3px solid #34d399; }
+
+  .card h3 { font-size: 16px; margin-bottom: 10px; }
+  .card p  { font-size: 14px; color: #888; line-height: 1.6; }
+
+  /* ── Bullet lists ── */
+  ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 760px;
+  }
+  li {
+    font-size: 17px;
+    line-height: 1.6;
+    color: #c0c0c0;
+    padding-left: 20px;
+    position: relative;
+  }
+  li::before {
+    content: "›";
+    position: absolute;
+    left: 0;
+    color: #d97706;
+    font-weight: 700;
+  }
+  li.blue::before { color: #60a5fa; }
+  li.green::before { color: #34d399; }
+  li.purple::before { color: #a78bfa; }
+
+  /* ── Comparison table ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+  }
+  th {
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 1px solid #333;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #666;
+    font-weight: 600;
+  }
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #1e1e1e;
+    color: #c0c0c0;
+    line-height: 1.5;
+  }
+  td:first-child { color: #888; font-size: 13px; }
+  td.bad-col  { color: #f87171; }
+  td.good-col { color: #34d399; }
+
+  /* ── Tag badges ── */
+  .badge {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .badge-orange { background: rgba(217,119,6,0.15); color: #d97706; border: 1px solid rgba(217,119,6,0.3); }
+  .badge-blue   { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+  .badge-green  { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid rgba(52,211,153,0.3); }
+  .badge-purple { background: rgba(167,139,250,0.15); color: #a78bfa; border: 1px solid rgba(167,139,250,0.3); }
+
+  /* ── Quote ── */
+  .quote {
+    font-size: 32px;
+    font-weight: 300;
+    line-height: 1.5;
+    color: #e0e0e0;
+    max-width: 840px;
+    letter-spacing: -0.3px;
+  }
+  .quote em { color: #d97706; font-style: normal; font-weight: 600; }
+
+  /* ── Big number stat ── */
+  .stat {
+    font-size: 72px;
+    font-weight: 800;
+    color: #d97706;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  /* ── Nav controls ── */
+  .nav {
+    position: fixed;
+    bottom: 32px;
+    right: 48px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 100;
+  }
+  .nav-btn {
+    background: #1e1e1e;
+    border: 1px solid #333;
+    color: #888;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .nav-btn:hover { background: #2a2a2a; color: #e0e0e0; border-color: #555; }
+  .nav-count {
+    font-size: 12px;
+    color: #444;
+    font-variant-numeric: tabular-nums;
+    min-width: 56px;
+    text-align: center;
+  }
+
+  /* ── Progress bar ── */
+  .progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 2px;
+    background: #d97706;
+    transition: width 0.3s ease;
+    z-index: 100;
+  }
+
+  /* ── Slide number indicator ── */
+  .slide-num {
+    position: fixed;
+    top: 28px;
+    right: 48px;
+    font-size: 11px;
+    color: #333;
+    letter-spacing: 1px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Section divider line ── */
+  .divider {
+    width: 48px;
+    height: 3px;
+    background: #d97706;
+    border-radius: 2px;
+    margin: 20px 0 28px;
+  }
+  .divider.blue   { background: #3b82f6; }
+  .divider.green  { background: #34d399; }
+  .divider.purple { background: #a78bfa; }
+
+  /* ── Icon circle ── */
+  .icon-row {
+    display: flex;
+    gap: 24px;
+    margin-top: 8px;
+  }
+  .icon-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .icon-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+  }
+  .icon-label {
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Full-screen command highlight ── */
+  .cmd-highlight {
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: #fbbf24;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 16px 28px;
+    display: inline-block;
+    margin: 12px 0;
+  }
+
+  .mt8  { margin-top: 8px; }
+  .mt16 { margin-top: 16px; }
+  .mt24 { margin-top: 24px; }
+  .mt32 { margin-top: 32px; }
+  .mb16 { margin-bottom: 16px; }
+
+  /* ── Print to PDF ── */
+  @media print {
+    body { overflow: visible; }
+    .slide { display: flex !important; opacity: 1 !important;
+             position: relative !important; page-break-after: always;
+             height: 100vh; }
+    .nav, .progress, .slide-num { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<div class="slide-num" id="slideNum"></div>
+
+<div class="deck" id="deck">
+
+  <!-- ─────────────────────────────────────── SLIDE 1 — Title ── -->
+  <div class="slide slide-title active">
+    <div class="eyebrow">Engineering Team Session · Claude Code</div>
+    <h1>Plugins</h1>
+    <p class="subtitle">From zero to daily use — installation, skills, commands, MCP, and building your own.</p>
+    <div style="margin-top:48px; display:flex; gap:32px; align-items:center;">
+      <div style="text-align:left;">
+        <div style="font-size:12px; color:#444; letter-spacing:2px; text-transform:uppercase; margin-bottom:4px;">Format</div>
+        <div style="font-size:18px; color:#888;">Live demos + hands-on</div>
+      </div>
+      <div style="width:1px; height:40px; background:#222;"></div>
+      <div style="text-align:left;">
+        <div style="font-size:12px; color:#444; letter-spacing:2px; text-transform:uppercase; margin-bottom:4px;">Prereq</div>
+        <div style="font-size:18px; color:#888;">Claude Code CLI installed</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────── SLIDE 2 — The Problem ── -->
+  <div class="slide slide-content">
+    <div class="eyebrow">The Problem</div>
+    <h2>Why do you keep explaining the same thing?</h2>
+    <div class="cols cols-2" style="margin-top:8px;">
+      <div>
+        <p style="font-size:16px; color:#666; margin-bottom:12px;">Monday session</p>
+        <pre>"When writing TypeScript, use zod for all
+external data, never use <span class="bad">any</span>, use our
+Result type for errors, follow our logging
+pattern from lib/logger.ts..."
+
+<span class="good">// Claude follows it. Great!</span></pre>
+      </div>
+      <div>
+        <p style="font-size:16px; color:#666; margin-bottom:12px;">Wednesday (new session)</p>
+        <pre><span class="bad">// Context cleared.</span>
+Claude writes raw try/catch.
+Uses any types.
+No logging.
+No Result pattern.
+
+<span class="bad">"What happened to the patterns?"</span></pre>
+      </div>
+    </div>
+    <div class="card mt32" style="background: rgba(217,119,6,0.08); border-color: rgba(217,119,6,0.2); padding:20px 24px; border-radius:10px;">
+      <p style="color:#d97706; font-size:16px; font-weight:500;">Plugins solve this. They encode your standards once, and Claude follows them <em style="font-style:normal; font-weight:700;">every session</em> — without being asked.</p>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────── SLIDE 3 — What are plugins ── -->
+  <div class="slide slide-content">
+    <div class="eyebrow">Overview</div>
+    <h2>A plugin is one package — with three building blocks inside</h2>
+    <div class="cols cols-3" style="margin-top:8px;">
+      <div class="card card-orange">
+        <div style="font-size:32px; margin-bottom:12px;">🎯</div>
+        <h3 style="color:#d97706;">Skills</h3>
+        <p>Claude auto-applies them when context matches. You never type anything — they just fire.</p>
+        <p class="mt8" style="color:#555; font-size:13px;">Example: every UI you build follows your design system automatically.</p>
+      </div>
+      <div class="card card-blue">
+        <div style="font-size:32px; margin-bottom:12px;">⚡</div>
+        <h3 style="color:#60a5fa;">Commands</h3>
+        <p>Slash commands you type to kick off a defined multi-step workflow.</p>
+        <p class="mt8" style="color:#555; font-size:13px;">Example: <code>/commit</code> — reads diff, matches commit style, creates commit.</p>
+      </div>
+      <div class="card card-purple">
+        <div style="font-size:32px; margin-bottom:12px;">🔌</div>
+        <h3 style="color:#a78bfa;">MCP Servers</h3>
+        <p>Gives Claude actual tool access — not just knowledge, but the ability to call APIs and run tools.</p>
+        <p class="mt8" style="color:#555; font-size:13px;">Example: Claude controls a real browser, creates GitHub issues, reads Linear.</p>
+      </div>
+    </div>
+    <div class="mt24">
+      <pre style="font-size:13px; line-height:1.8;"><span class="cmt"># One plugin can have all three, or just one — your choice</span>
+commit-commands/          <span class="cmt">← 3 Commands, no MCP, no Skills</span>
+playwright/               <span class="cmt">← 1 MCP server, no Commands</span>
+team-plugin/              <span class="cmt">← 1 Skill + 2 Commands, no MCP</span>
+your-plugin/              <span class="cmt">← mix whatever you need</span></pre>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────── SLIDE 4 — Marketplace ── -->
+  <div class="slide slide-content">
+    <div class="eyebrow">Discovery</div>
+    <h2>The Plugin Marketplace</h2>
+    <div class="cols cols-60-40">
+      <div>
+        <ul style="gap:10px;">
+          <li>Official marketplace: <code>claude-plugins-official</code></li>
+          <li>Browse at <a href="https://claude.com/plugins" target="_blank" style="color:#60a5fa; text-decoration:none; border-bottom:1px solid rgba(96,165,250,0.4);">claude.com/plugins</a> — or via GitHub at <code>anthropics/claude-plugins-official</code></li>
+          <li>Two categories: <strong style="color:#d97706;">Internal</strong> (Anthropic-built) and <strong style="color:#60a5fa;">External</strong> (community)</li>
+          <li>All plugins are plain Markdown — readable before installing</li>
+        </ul>
+        <div class="mt24">
+          <div class="cmd-highlight">/plugin</div>
+          <p style="font-size:14px; color:#555; margin-top:8px;">Opens the interactive browser. Navigate with arrow keys.</p>
+        </div>
+      </div>
+      <div>
+        <p style="font-size:13px; color:#555; margin-bottom:12px; letter-spacing:1px; text-transform:uppercase;">Official plugins (sample)</p>
+        <pre style="font-size:12.5px; line-height:2;">commit-commands   <span class="cmt">git workflow</span>
+code-review       <span class="cmt">automated PR review</span>
+security-guidance <span class="cmt">real-time security</span>
+frontend-design   <span class="cmt">distinctive UI</span>
+playwright        <span class="cmt">browser automation</span>
+github            <span class="cmt">GitHub API access</span>
+linear            <span class="cmt">Linear board access</span>
+plugin-dev        <span class="cmt">build your own</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────── SLIDE 5 — Installing ── -->
+  <div class="slide slide-demo">
+    <div class="eyebrow blue">Installation</div>
+    <h2>Installing plugins</h2>
+    <div class="cols cols-2">
+      <div>
+        <pre><span class="cmt"># User scope (default — just you)</span>
+<span class="fn">/plugin install</span> commit-commands<span class="str">@claude-plugins-official</span>
+
+<span class="cmt"># Local scope (just you, this project)</span>
+<span class="fn">/plugin install</span> commit-commands<span class="str">@claude-plugins-official</span> \
+  <span class="kw">--scope local</span>
+
+<span class="cmt"># Project scope (whole team via git)</span>
+<span class="fn">/plugin install</span> commit-commands<span class="str">@claude-plugins-official</span> \
+  <span class="kw">--scope project</span>
+<span class="fn">git add</span> .claude/
+<span class="fn">git commit</span> -m <span class="str">"chore: add team plugins"</span>
+
+<span class="cmt"># List / update / remove</span>
+<span class="fn">/plugin list</span>
+<span class="fn">/plugin update</span>
+<span class="fn">/plugin remove</span> commit-commands<span class="str">@claude-plugins-official</span></pre>
+      </div>
+      <div>
+        <p style="font-size:14px; color:#666; margin-bottom:12px; letter-spacing:1px; text-transform:uppercase;">Install scopes</p>
+        <table>
+          <tr><th>Scope</th><th>Flag</th><th>Stored at</th><th>Who gets it</th></tr>
+          <tr>
+            <td><strong>User</strong> <span style="color:#888;font-size:11px;">(default)</span></td>
+            <td><code style="font-size:11px;">--scope user</code></td>
+            <td><code style="font-size:11px;">~/.claude/plugins/</code></td>
+            <td style="color:#888;">Just you, all projects</td>
+          </tr>
+          <tr>
+            <td><strong>Local</strong></td>
+            <td><code style="font-size:11px;">--scope local</code></td>
+            <td><code style="font-size:11px;">./.claude/plugins/</code> <span style="color:#f87171;font-size:10px;">(gitignored)</span></td>
+            <td style="color:#fbbf24;">Just you, this project</td>
+          </tr>
+          <tr>
+            <td><strong>Project</strong></td>
+            <td><code style="font-size:11px;">--scope project</code></td>
+            <td><code style="font-size:11px;">./.claude/plugins/</code> <span style="color:#34d399;font-size:10px;">(commit to git)</span></td>
+            <td class="good-col">Whole team</td>
+          </tr>
+        </table>
+        <p style="font-size:13px; color:#666; margin:14px 0 8px; letter-spacing:1px; text-transform:uppercase;">Install sources</p>
+        <table>
+          <tr><th>Source</th><th>Example</th></tr>
+          <tr>
+            <td>Official marketplace</td>
+            <td><code style="font-size:11px;">commit-commands@claude-plugins-official</code></td>
+          </tr>
+          <tr>
+            <td>Git URL <span style="color:#555; font-size:11px;">(any public repo)</span></td>
+            <td><code style="font-size:11px;">https://github.com/&lt;org&gt;/&lt;plugin-repo&gt;</code></td>
+          </tr>
+          <tr>
+            <td>Local path <span style="color:#34d399; font-size:11px;">(our demo plugin)</span></td>
+            <td><code style="font-size:11px;">./team-plugin</code> <span style="color:#555; font-size:11px;">← relative to project root</span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────── SLIDE 6 — Build your own ── -->
+  <div class="slide slide-section">
+    <div class="badge badge-green">Bonus</div>
+    <h2>Build Your Own</h2>
+    <div class="divider green"></div>
+    <p class="quote">"Marketplace plugins are generic.<br/>Your team's best practices are <em>specific.</em>"</p>
+  </div>
+
+  <!-- ─────────────────────────────────────── SLIDE 7 — Plugin structure ── -->
+  <div class="slide slide-demo">
+    <div class="eyebrow green">Build Your Own</div>
+    <h2>A plugin is just three files</h2>
+    <div class="cols cols-60-40">
+      <div>
+        <pre style="font-size:13px;">team-plugin/
+├── .claude-plugin/
+│   └── <span class="fn">plugin.json</span>      <span class="cmt">← name, description, author</span>
+├── skills/
+│   └── team-standards/
+│       └── <span class="fn">SKILL.md</span>    <span class="cmt">← auto-triggered guidance</span>
+└── commands/
+    ├── <span class="fn">standup.md</span>      <span class="cmt">← /standup</span>
+    └── <span class="fn">ticket.md</span>       <span class="cmt">← /ticket AUTH-234</span></pre>
+        <div class="mt16">
+          <pre style="font-size:13px;"><span class="cmt"># Install for the team</span>
+<span class="fn">/plugin install</span> ./team-plugin <span class="kw">--scope project</span>
+<span class="fn">git add</span> .claude/ && <span class="fn">git commit</span> -m <span class="str">"chore: team plugin"</span></pre>
+        </div>
+      </div>
+      <div>
+        <p style="font-size:13px; color:#888; margin-bottom:14px; letter-spacing:1px; text-transform:uppercase;">plugin.json</p>
+        <pre style="font-size:13px;">{
+  <span class="str">"name"</span>: <span class="str">"team-plugin"</span>,
+  <span class="fn">"description"</span>: <span class="str">"Our standards"</span>,
+  <span class="fn">"author"</span>: {
+    <span class="str">"name"</span>: <span class="str">"Simform Engineering"</span>
+  }
+}</pre>
+        <div class="card card-green mt16" style="padding:16px 20px;">
+          <p style="font-size:13px; color:#888; line-height:1.6;">No build step. No compilation. Plain Markdown. Version-controlled like any code.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────── SLIDE 8 — Demo team-plugin ── -->
+  <div class="slide slide-demo">
+    <div class="eyebrow green">Build Your Own · Demo</div>
+    <h2>team-plugin — purpose &amp; usage</h2>
+    <p style="font-size:14px; color:#888; margin:-20px 0 20px;">A plugin built for this repo. Encodes your team's coding standards and daily workflow shortcuts — so every engineer on the team gets the same behaviour without copy-pasting prompts.</p>
+    <div class="cols cols-3" style="margin-top:0;">
+
+      <div class="card card-orange">
+        <p style="font-size:11px; color:#d97706; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">Skill · Auto-triggered</p>
+        <h3 style="color:#d97706; font-size:15px;">team-standards</h3>
+        <p style="font-size:13px; margin-bottom:10px;">Fires automatically whenever Claude writes or edits TypeScript / JavaScript — no command needed.</p>
+        <p style="font-size:12px; color:#555; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Enforces:</p>
+        <ul style="gap:5px;">
+          <li style="font-size:12px; color:#888;">Result pattern — no <code style="font-size:10px;">throw</code> for domain errors</li>
+          <li style="font-size:12px; color:#888;">Structured logging on every I/O function</li>
+          <li style="font-size:12px; color:#888;">No <code style="font-size:10px;">any</code> — Zod for external data</li>
+          <li style="font-size:12px; color:#888;"><code style="font-size:10px;">Promise.all()</code> for parallel async calls</li>
+        </ul>
+      </div>
+
+      <div class="card card-blue">
+        <p style="font-size:11px; color:#60a5fa; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">Command · You type it</p>
+        <h3 style="color:#60a5fa; font-size:15px;">/standup [hours]</h3>
+        <p style="font-size:13px; margin-bottom:10px;"><strong style="color:#e0e0e0;">When:</strong> Every morning before standup. Pass hours to look further back (default 24h).</p>
+        <p style="font-size:12px; color:#555; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">What Claude does:</p>
+        <ul style="gap:5px;">
+          <li style="font-size:12px; color:#888;">Reads <code style="font-size:10px;">git log</code> for your commits</li>
+          <li style="font-size:12px; color:#888;">Reads <code style="font-size:10px;">git status</code> for in-progress work</li>
+          <li style="font-size:12px; color:#888;">Formats <strong style="color:#d4d4d4;">Yesterday / Today / Blockers</strong> ready to paste</li>
+        </ul>
+        <pre style="font-size:11px; margin-top:10px; padding:10px 14px; line-height:1.6;"><span class="fn">/standup</span>
+<span class="fn">/standup</span> <span class="str">48</span>   <span class="cmt"># last 48 hours</span></pre>
+      </div>
+
+      <div class="card card-purple">
+        <p style="font-size:11px; color:#a78bfa; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">Command · You type it</p>
+        <h3 style="color:#a78bfa; font-size:15px;">/ticket &lt;id&gt;</h3>
+        <p style="font-size:13px; margin-bottom:10px;"><strong style="color:#e0e0e0;">When:</strong> Starting a new task. Pass your ticket ID — Claude creates a properly named branch.</p>
+        <p style="font-size:12px; color:#555; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">What Claude does:</p>
+        <ul style="gap:5px;">
+          <li style="font-size:12px; color:#888;">Reads ticket title from Linear / Jira</li>
+          <li style="font-size:12px; color:#888;">Creates <code style="font-size:10px;">kebab-case</code> branch name</li>
+          <li style="font-size:12px; color:#888;">Checks out the new branch ready to code</li>
+        </ul>
+        <pre style="font-size:11px; margin-top:10px; padding:10px 14px; line-height:1.6;"><span class="fn">/ticket</span> <span class="str">AUTH-234</span>
+<span class="cmt"># → auth-234/add-refresh-token-rotation</span></pre>
+      </div>
+
+    </div>
+    <div class="cmd-highlight" style="font-size:16px; margin-top:16px; display:inline-block;">/plugin install ./team-plugin</div>
+  </div>
+
+  <!-- ─────────────────────────────────────── SLIDE 9 — Sharing plugins ── -->
+  <div class="slide slide-content">
+    <div class="eyebrow green">Sharing Plugins</div>
+    <h2>How to share plugins — local &amp; global</h2>
+    <div class="cols cols-2" style="margin-top:0; gap:24px;">
+      <div>
+        <p style="font-size:13px; color:#34d399; letter-spacing:1px; text-transform:uppercase; margin-bottom:12px;">Share with your team (project scope)</p>
+        <div class="card card-green" style="padding:18px 20px; margin-bottom:16px;">
+          <p style="font-size:13px; color:#888; margin-bottom:10px;">Install with <code style="font-size:11px;">--scope project</code> — Claude writes the plugin into <code style="font-size:11px;">.claude/plugins/</code> inside your repo. Commit that folder and every teammate gets it on <code style="font-size:11px;">git pull</code>.</p>
+          <pre style="font-size:12px; padding:12px 16px; line-height:1.8;"><span class="fn">/plugin install</span> ./team-plugin <span class="kw">--scope project</span>
+<span class="fn">git add</span> .claude/
+<span class="fn">git commit</span> -m <span class="str">"chore: add team-plugin"</span>
+<span class="fn">git push</span>
+<span class="cmt"># teammates run: git pull — done</span></pre>
+        </div>
+        <div class="card" style="padding:18px 20px; border-left:3px solid #3b82f6;">
+          <p style="font-size:11px; color:#60a5fa; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">Private GitHub repo (team with access)</p>
+          <p style="font-size:13px; color:#888; margin-bottom:8px;">Host the plugin on a private GitHub repo. Anyone with access can install directly from the URL.</p>
+          <pre style="font-size:12px; padding:10px 14px; line-height:1.8;"><span class="fn">/plugin install</span> <span class="str">https://github.com/simform/team-plugin</span></pre>
+        </div>
+      </div>
+      <div>
+        <p style="font-size:13px; color:#a78bfa; letter-spacing:1px; text-transform:uppercase; margin-bottom:12px;">Share with everyone (global / public)</p>
+        <div class="card card-purple" style="padding:18px 20px; margin-bottom:16px;">
+          <p style="font-size:11px; color:#a78bfa; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">Public GitHub URL</p>
+          <p style="font-size:13px; color:#888; margin-bottom:8px;">Push to a public GitHub repo. Anyone in the world can install it with the URL — no marketplace approval needed.</p>
+          <pre style="font-size:12px; padding:10px 14px; line-height:1.8;"><span class="fn">/plugin install</span> <span class="str">https://github.com/&lt;you&gt;/my-plugin</span></pre>
+        </div>
+        <div class="card card-orange" style="padding:18px 20px;">
+          <p style="font-size:11px; color:#d97706; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">Official marketplace (anthropics/claude-plugins-official)</p>
+          <p style="font-size:13px; color:#888; margin-bottom:8px;">Submit a PR to the official repo. Once merged, anyone can install using the short <code style="font-size:11px;">@claude-plugins-official</code> handle.</p>
+          <pre style="font-size:12px; padding:10px 14px; line-height:1.8;"><span class="cmt"># After PR is merged:</span>
+<span class="fn">/plugin install</span> my-plugin<span class="str">@claude-plugins-official</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────── SLIDE 10 — Comparison table ── -->
+  <div class="slide slide-compare">
+    <div class="eyebrow">The Real Advantage</div>
+    <h2>Plugins vs Normal Prompting</h2>
+    <table style="margin-top:16px;">
+      <tr>
+        <th>Aspect</th>
+        <th class="bad-col">Normal Prompting</th>
+        <th class="good-col">Plugin</th>
+      </tr>
+      <tr>
+        <td>Activation</td>
+        <td class="bad-col">You include it in every prompt</td>
+        <td class="good-col">Auto-fires when context matches</td>
+      </tr>
+      <tr>
+        <td>Persistence</td>
+        <td class="bad-col">Lost when session ends</td>
+        <td class="good-col">Always active</td>
+      </tr>
+      <tr>
+        <td>Team consistency</td>
+        <td class="bad-col">Each dev prompts differently</td>
+        <td class="good-col">Same standards for everyone</td>
+      </tr>
+      <tr>
+        <td>Maintenance</td>
+        <td class="bad-col">Update every engineer's habit</td>
+        <td class="good-col">Update one file in git</td>
+      </tr>
+      <tr>
+        <td>Onboarding</td>
+        <td class="bad-col">New devs don't know the prompts</td>
+        <td class="good-col">Install the plugin → instant context</td>
+      </tr>
+      <tr>
+        <td>External tools</td>
+        <td class="bad-col">You explain the API each time</td>
+        <td class="good-col">Claude calls the API directly</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ─────────────────────────────────────── SLIDE 11 — The quote ── -->
+  <div class="slide slide-callout">
+    <p class="quote" style="font-size:40px; max-width:760px;">"Normal prompting is a conversation.<br/>Plugins are <em>institutional memory.</em>"</p>
+    <p class="subtitle" style="margin-top:32px; font-size:17px;">The conversation ends. The plugin doesn't.</p>
+  </div>
+
+  <!-- ─────────────────────────────────────── SLIDE 12 — Getting started ── -->
+  <div class="slide slide-content">
+    <div class="eyebrow green">Action Items</div>
+    <h2>What to install this week</h2>
+    <div class="cols cols-2" style="margin-top:8px;">
+      <div>
+        <p style="font-size:13px; color:#888; margin-bottom:14px; letter-spacing:1px; text-transform:uppercase;">Start here (5 minutes)</p>
+        <pre style="font-size:13px;"><span class="fn">/plugin install</span> commit-commands<span class="str">@claude-plugins-official</span>
+<span class="fn">/plugin install</span> code-review<span class="str">@claude-plugins-official</span>
+<span class="fn">/plugin install</span> security-guidance<span class="str">@claude-plugins-official</span></pre>
+        <p style="font-size:14px; color:#555; margin-top:12px; line-height:1.7;">These three give you: smart commits, automated PR review, and real-time security checks. No config needed.</p>
+      </div>
+      <div>
+        <p style="font-size:13px; color:#888; margin-bottom:14px; letter-spacing:1px; text-transform:uppercase;">Build your team plugin</p>
+        <ul style="gap:10px;">
+          <li class="green">Pick one thing you explain to Claude every week</li>
+          <li class="green">Write a SKILL.md for it (10 minutes)</li>
+          <li class="green">Install with <code style="font-size:12px;">--scope project</code></li>
+          <li class="green">Commit <code style="font-size:12px;">.claude/</code> — team gets it instantly</li>
+        </ul>
+        <div class="card card-green mt16" style="padding:16px 20px;">
+          <p style="font-size:13px; color:#888; line-height:1.6;">Use <code style="font-size:12px;">skill-creator@claude-plugins-official</code> to have Claude help you write the SKILL.md.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────── SLIDE 13 — Q&A ── -->
+  <div class="slide slide-title">
+    <div class="eyebrow">Thanks</div>
+    <h1>Questions?</h1>
+    <p class="subtitle" style="margin-top:20px;">Demo files are in <code style="font-size:16px; background:#1a1a1a; padding:4px 12px; border-radius:6px; color:#fbbf24;">session-demo/</code></p>
+    <div style="margin-top:32px; display:grid; grid-template-columns:1fr 1fr; gap:10px; max-width:860px;">
+      <div style="display:flex; gap:14px; align-items:center; background:#111; border:1px solid #222; border-radius:8px; padding:10px 16px;">
+        <code style="font-size:13px; color:#60a5fa;">/plugin</code>
+        <span style="color:#444; font-size:13px;">open the plugin browser</span>
+      </div>
+      <div style="display:flex; gap:14px; align-items:center; background:#111; border:1px solid #222; border-radius:8px; padding:10px 16px;">
+        <code style="font-size:13px; color:#60a5fa;">/plugin install commit-commands@claude-plugins-official</code>
+      </div>
+      <div style="display:flex; gap:14px; align-items:center; background:#111; border:1px solid #222; border-radius:8px; padding:10px 16px;">
+        <code style="font-size:13px; color:#60a5fa;">/plugin install ./team-plugin</code>
+        <span style="color:#444; font-size:13px;">team demo plugin</span>
+      </div>
+      <div style="display:flex; gap:14px; align-items:center; background:#111; border:1px solid #222; border-radius:8px; padding:10px 16px;">
+        <code style="font-size:13px; color:#60a5fa;">/plugin install plugin-dev@claude-plugins-official</code>
+      </div>
+      <div style="display:flex; gap:14px; align-items:center; background:#111; border:1px solid #222; border-radius:8px; padding:10px 16px;">
+        <code style="font-size:13px; color:#60a5fa;">/plugin install skill-creator@claude-plugins-official</code>
+      </div>
+      <div style="display:flex; gap:14px; align-items:center; background:#111; border:1px solid #222; border-radius:8px; padding:10px 16px;">
+        <code style="font-size:13px; color:#60a5fa;">/revise-claude-md</code>
+        <span style="color:#444; font-size:13px;">after today's session</span>
+      </div>
+    </div>
+    <p style="margin-top:32px; font-size:13px; color:#2a2a2a;">Marketplace → github.com/anthropics/claude-plugins-official &nbsp;·&nbsp; Docs → code.claude.com/docs/en/plugins</p>
+  </div>
+
+</div><!-- end .deck -->
+
+<!-- ── Navigation ── -->
+<div class="nav">
+  <button class="nav-btn" id="prev" title="Previous (←)">‹</button>
+  <span class="nav-count" id="counter">1 / 13</span>
+  <button class="nav-btn" id="next" title="Next (→)">›</button>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const progress = document.getElementById('progress');
+  const counter = document.getElementById('counter');
+  const slideNum = document.getElementById('slideNum');
+  let current = 0;
+
+  function go(n) {
+    slides[current].classList.remove('active');
+    current = (n + slides.length) % slides.length;
+    slides[current].classList.add('active');
+    const pct = ((current + 1) / slides.length * 100).toFixed(1);
+    progress.style.width = pct + '%';
+    counter.textContent = (current + 1) + ' / ' + slides.length;
+    slideNum.textContent = (current + 1) + ' / ' + slides.length;
+  }
+
+  document.getElementById('next').addEventListener('click', () => go(current + 1));
+  document.getElementById('prev').addEventListener('click', () => go(current - 1));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); go(current + 1); }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                    { e.preventDefault(); go(current - 1); }
+    if (e.key === 'Home') go(0);
+    if (e.key === 'End')  go(slides.length - 1);
+  });
+
+  // Touch swipe
+  let tx = 0;
+  document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; });
+  document.addEventListener('touchend',   e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 40) go(dx < 0 ? current + 1 : current - 1);
+  });
+
+  go(0);
+</script>
+</body>
+</html>

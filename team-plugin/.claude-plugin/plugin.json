@@ -1,0 +1,8 @@
+{
+  "name": "team-plugin",
+  "description": "Engineering team coding standards, workflow commands, and daily utilities",
+  "author": {
+    "name": "Simform Engineering",
+    "email": "engineering@simformsolutions.com"
+  }
+}
