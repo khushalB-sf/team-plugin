@@ -4,30 +4,85 @@
 
 ```bash
 /plugin                                          # Open plugin browser (interactive)
-/plugin discover                                 # Browse marketplace
 /plugin install <name>@claude-plugins-official   # Install from official marketplace
-/plugin install <name>@claude-plugins-official --scope project  # Install for whole team
-/plugin install ./local-path                     # Install from local directory
-/plugin install https://github.com/org/repo      # Install from git URL
+/plugin install <name>@claude-plugins-official --scope local    # Just you, this project
+/plugin install <name>@claude-plugins-official --scope project  # Whole team (commit to git)
+/plugin install ./team-plugin                    # Install from local path
 /plugin list                                     # Show installed plugins
 /plugin update                                   # Update all plugins
-/plugin update <name>@claude-plugins-official    # Update specific plugin
 /plugin remove <name>@claude-plugins-official    # Uninstall
 ```
 
 ---
 
-## Must-Have Plugins for Engineering Teams
+## Install Sources
 
-| Plugin | What it does | Install |
-|--------|-------------|---------|
-| `commit-commands` | `/commit`, `/commit-push-pr`, `/clean_gone` | `/plugin install commit-commands@claude-plugins-official` |
-| `code-review` | Automated 4-agent PR review | `/plugin install code-review@claude-plugins-official` |
-| `security-guidance` | Real-time security checks on every save | `/plugin install security-guidance@claude-plugins-official` |
-| `frontend-design` | Distinctive UI instead of generic AI layouts | `/plugin install frontend-design@claude-plugins-official` |
-| `github` | Claude reads/creates GitHub issues and PRs | `/plugin install github@claude-plugins-official` |
-| `playwright` | Claude controls a real browser | `/plugin install playwright@claude-plugins-official` |
-| `linear` | Claude reads/updates your Linear board | `/plugin install linear@claude-plugins-official` |
+| Source | How |
+|--------|-----|
+| Official marketplace | `/plugin install <name>@claude-plugins-official` |
+| GitHub repo (private or public) | `git clone <repo-url> ~/.claude/plugins/<name>` |
+| Local path | `./team-plugin` (relative to project root) |
+
+---
+
+## Plugin Scopes
+
+| Scope | Flag | Stored at | Who gets it |
+|-------|------|-----------|-------------|
+| User _(default)_ | `--scope user` | `~/.claude/plugins/` | Just you, all projects |
+| Local | `--scope local` | `./.claude/plugins/` _(gitignored)_ | Just you, this project |
+| Project | `--scope project` | `./.claude/plugins/` _(commit to git)_ | Whole team |
+
+---
+
+## Sharing with Your Team
+
+```bash
+# Copy plugin into project scope and commit
+mkdir -p .claude/plugins
+cp -r team-plugin .claude/plugins/
+git add .claude/
+git commit -m "chore: add team-plugin"
+git push
+# teammates: git pull → plugin loads automatically
+```
+
+---
+
+## Start Here (5 minutes)
+
+```bash
+/plugin install commit-commands@claude-plugins-official   # smart commits
+/plugin install code-review@claude-plugins-official       # automated PR review
+/plugin install security-guidance@claude-plugins-official # real-time security checks
+```
+
+## Other Official Plugins
+
+| Plugin | What it does |
+|--------|-------------|
+| `frontend-design` | Distinctive UI instead of generic AI layouts |
+| `playwright` | Claude controls a real browser |
+| `github` | Claude reads/creates GitHub issues and PRs |
+| `linear` | Claude reads/updates your Linear board |
+| `plugin-dev` | Scaffolding and guidance for building plugins |
+| `skill-creator` | Claude helps you write a SKILL.md |
+
+---
+
+## team-plugin (Demo Plugin)
+
+```bash
+# Install
+mkdir -p .claude/plugins && cp -r team-plugin .claude/plugins/
+
+# Commands it adds
+/standup           # Yesterday / Today / Blockers from git log (default 24h)
+/standup 48        # Look back 48 hours instead
+/ticket AUTH-234   # Create kebab-case branch from ticket ID
+```
+
+The `team-standards` skill fires **automatically** when Claude writes TypeScript/JavaScript — no command needed.
 
 ---
 
@@ -42,6 +97,21 @@ my-plugin/
 │       └── SKILL.md       ← auto-triggered guidance
 └── commands/
     └── my-command.md      ← user-triggered slash command
+```
+
+---
+
+## Three Plugin Types
+
+```
+Skills     → Auto-fires when context matches
+             Lives in skills/<name>/SKILL.md
+
+Commands   → User types /command-name
+             Lives in commands/command-name.md
+
+MCP        → Claude gets actual tool access (APIs, browser, etc.)
+             Configured in .mcp.json by the plugin installer
 ```
 
 ---
@@ -83,39 +153,13 @@ The user provided: $ARGUMENTS
 
 ---
 
-## Three Plugin Types
+## Plugins vs Normal Prompting
 
-```
-Skills     → Auto-fires when context matches
-             Lives in skills/<name>/SKILL.md
-
-Commands   → User types /command-name
-             Lives in commands/command-name.md
-
-MCP        → Claude gets actual tool access (APIs, browser, etc.)
-             Configured in .mcp.json by the plugin installer
-```
-
----
-
-## Plugin Scopes
-
-| Scope | Default? | Stored at | Team-shared? |
-|-------|----------|-----------|-------------|
-| User | Yes | `~/.claude/plugins/` | No |
-| Project | `--scope project` | `./.claude/plugins/` | Yes (commit to git) |
-
----
-
-## Key Insight
-
-```
-Normal prompting → forgotten every session
-Plugin           → active every session
-
-Normal prompting → one engineer's habit
-Plugin           → the whole team's default
-
-Normal prompting → requires perfect instructions each time
-Plugin           → encode the instructions once, use forever
-```
+| Aspect | Normal Prompting | Plugin |
+|--------|-----------------|--------|
+| Activation | You include it in every prompt | Auto-fires when context matches |
+| Persistence | Lost when session ends | Always active |
+| Team consistency | Each dev prompts differently | Same standards for everyone |
+| Maintenance | Update every engineer's habit | Update one file in git |
+| Onboarding | New devs don't know the prompts | Install the plugin → instant context |
+| External tools | You explain the API each time | Claude calls the API directly |
