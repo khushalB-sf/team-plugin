@@ -4,16 +4,16 @@ A hands-on session guide covering Claude Code plugins from zero to production us
 
 ## Session Structure (~90 minutes)
 
-| # | Topic | Time | File |
-|---|-------|------|------|
-| 1 | What are plugins? | 10 min | [`01-concepts/`](01-concepts/) |
-| 2 | Discovering plugins | 10 min | [`02-discovery/`](02-discovery/) |
-| 3 | Installing plugins | 10 min | [`03-installation/`](03-installation/) |
-| 4 | Skills — auto-triggered guidance | 15 min | [`04-skills/`](04-skills/) |
-| 5 | Commands — user-triggered actions | 15 min | [`05-commands/`](05-commands/) |
-| 6 | MCP plugins — real tool access | 15 min | [`06-mcp/`](06-mcp/) |
-| 7 | Building your own plugin | 10 min | [`07-build-your-own/`](07-build-your-own/) |
-| 8 | Plugins vs normal prompting | 5 min | [`08-vs-prompting/`](08-vs-prompting/) |
+| # | Topic | Time | Slides |
+|---|-------|------|--------|
+| 1 | The problem with prompting | 5 min | 2 |
+| 2 | What are plugins? (Skills, Commands, MCP) | 10 min | 3 |
+| 3 | Discovering the marketplace | 10 min | 4 |
+| 4 | Installing plugins | 10 min | 5 |
+| 5 | Building your own plugin | 25 min | 6–8 · [`team-plugin/`](team-plugin/) |
+| 6 | Sharing plugins | 10 min | 9 |
+| 7 | Plugins vs normal prompting | 10 min | 10–11 |
+| 8 | Action items & Q&A | 10 min | 12–13 |
 
 ## Quick Reference
 
