@@ -59,6 +59,7 @@
     }
 
     .slide-content {
+      margin: 10px auto;
       background: #111111;
     }
 
@@ -765,8 +766,8 @@ plugin-dev        <span class="cmt">build your own</span></pre>
               <td><code style="font-size:11px;">commit-commands@claude-plugins-official</code></td>
             </tr>
             <tr>
-              <td>Git URL <span style="color:#555; font-size:11px;">(any public repo)</span></td>
-              <td><code style="font-size:11px;">https://github.com/&lt;org&gt;/&lt;plugin-repo&gt;</code></td>
+              <td>Git clone <span style="color:#555; font-size:11px;">(GitHub repo)</span></td>
+              <td><code style="font-size:11px;">git clone &lt;repo-url&gt; ~/.claude/plugins/&lt;name&gt;</code></td>
             </tr>
             <tr>
               <td>Local path <span style="color:#34d399; font-size:11px;">(our demo plugin)</span></td>
@@ -902,7 +903,7 @@ cp -r team-plugin .claude/plugins/
     </div>
 
     <!-- ─────────────────────────────────────── SLIDE 9 — Sharing plugins ── -->
-    <div class="slide slide-content">
+    <div class="slide slide-demo" style="overflow-y:auto; justify-content:flex-start;">
       <div class="eyebrow green">Sharing Plugins</div>
       <h2>How to share plugins — local &amp; global</h2>
       <div class="cols cols-2" style="margin-top:0; gap:24px;">
@@ -925,11 +926,15 @@ cp -r team-plugin .claude/plugins/
           <div class="card" style="padding:18px 20px; border-left:3px solid #3b82f6;">
             <p style="font-size:11px; color:#60a5fa; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">
               Private GitHub repo (team with access)</p>
-            <p style="font-size:13px; color:#888; margin-bottom:8px;">Push the plugin to a private GitHub repo first,
-              then anyone with access installs from the real URL.</p>
+            <p style="font-size:13px; color:#888; margin-bottom:8px;">Push the plugin to a private GitHub repo first, then teammates clone it into their plugins directory.</p>
             <pre
-              style="font-size:12px; padding:10px 14px; line-height:1.8;"><span class="cmt"># Replace with your actual repo URL</span>
-<span class="fn">/plugin install</span> <span class="str">https://github.com/&lt;your-org&gt;/&lt;plugin-repo&gt;</span></pre>
+              style="font-size:12px; padding:10px 14px; line-height:1.8;"><span class="cmt"># User scope — works across all projects</span>
+git clone https://github.com/&lt;org&gt;/&lt;plugin-repo&gt; \
+  ~/.claude/plugins/&lt;plugin-name&gt;
+
+<span class="cmt"># Project scope — commit to git</span>
+git clone https://github.com/&lt;org&gt;/&lt;plugin-repo&gt; \
+  .claude/plugins/&lt;plugin-name&gt;</pre>
           </div>
         </div>
         <div>
@@ -938,10 +943,10 @@ cp -r team-plugin .claude/plugins/
           <div class="card card-purple" style="padding:18px 20px; margin-bottom:16px;">
             <p style="font-size:11px; color:#a78bfa; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">
               Public GitHub URL</p>
-            <p style="font-size:13px; color:#888; margin-bottom:8px;">Push to a public GitHub repo. Anyone in the world
-              can install it with the URL — no marketplace approval needed.</p>
+            <p style="font-size:13px; color:#888; margin-bottom:8px;">Push to a public GitHub repo. Anyone can clone it into their plugins directory — no marketplace approval needed.</p>
             <pre
-              style="font-size:12px; padding:10px 14px; line-height:1.8;"><span class="fn">/plugin install</span> <span class="str">https://github.com/&lt;you&gt;/my-plugin</span></pre>
+              style="font-size:12px; padding:10px 14px; line-height:1.8;">git clone https://github.com/&lt;you&gt;/my-plugin \
+  ~/.claude/plugins/my-plugin</pre>
           </div>
           <div class="card card-orange" style="padding:18px 20px;">
             <p style="font-size:11px; color:#d97706; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">
