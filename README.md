@@ -1,4 +1,4 @@
-# Claude Code Plugins — Engineering Team Session
+# Claude Code Plugins — Team Session
 
 A hands-on session guide covering Claude Code plugins from zero to production use.
 

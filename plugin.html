@@ -576,9 +576,9 @@
 
     <!-- ─────────────────────────────────────── SLIDE 1 — Title ── -->
     <div class="slide slide-title active">
-      <div class="eyebrow">Engineering Team Session · Claude Code</div>
+      <div class="eyebrow">Team Session · Claude Code</div>
       <h1>Plugins</h1>
-      <p class="subtitle">From zero to daily use — installation, skills, commands, MCP, and building your own.</p>
+      <p class="subtitle">From zero to daily use — installation, use and build your own.</p>
       <div style="margin-top:48px; display:flex; gap:32px; align-items:center;">
         <div style="text-align:left;">
           <div style="font-size:12px; color:#444; letter-spacing:2px; text-transform:uppercase; margin-bottom:4px;">
@@ -606,7 +606,7 @@
           </div>
           <div style="display:flex; align-items:flex-start; gap:16px;">
             <span style="font-size:13px; font-weight:700; color:#d97706; background:rgba(217,119,6,0.12); border:1px solid rgba(217,119,6,0.25); border-radius:6px; width:28px; height:28px; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;">02</span>
-            <div><div style="font-size:16px; font-weight:600; color:#e8e8e8; margin-bottom:2px;">What Are Plugins</div><div style="font-size:13px; color:#555;">Skills · Commands · MCP Servers · Hooks</div></div>
+            <div><div style="font-size:16px; font-weight:600; color:#e8e8e8; margin-bottom:2px;">What Are Plugins</div><div style="font-size:13px; color:#555;">Skills · Commands · Agents · MCP · Hooks · Permissions</div></div>
           </div>
           <div style="display:flex; align-items:flex-start; gap:16px;">
             <span style="font-size:13px; font-weight:700; color:#d97706; background:rgba(217,119,6,0.12); border:1px solid rgba(217,119,6,0.25); border-radius:6px; width:28px; height:28px; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;">03</span>
@@ -620,7 +620,7 @@
         <div style="display:flex; flex-direction:column; gap:14px;">
           <div style="display:flex; align-items:flex-start; gap:16px;">
             <span style="font-size:13px; font-weight:700; color:#34d399; background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.25); border-radius:6px; width:28px; height:28px; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;">05</span>
-            <div><div style="font-size:16px; font-weight:600; color:#e8e8e8; margin-bottom:2px;">Build Your Own</div><div style="font-size:13px; color:#555;">Plugin structure — 3 files, no build step</div></div>
+            <div><div style="font-size:16px; font-weight:600; color:#e8e8e8; margin-bottom:2px;">Build Your Own</div><div style="font-size:13px; color:#555;">Plugin structure — plain folder, no build step</div></div>
           </div>
           <div style="display:flex; align-items:flex-start; gap:16px;">
             <span style="font-size:13px; font-weight:700; color:#34d399; background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.25); border-radius:6px; width:28px; height:28px; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;">06</span>
@@ -674,42 +674,51 @@ No Result pattern.
     <!-- ─────────────────────────────────────── SLIDE 3 — What are plugins ── -->
     <div class="slide slide-content"  style="overflow-y:auto; justify-content:flex-start;">
       <div class="eyebrow">Overview</div>
-      <h2>A plugin is one package — with four building blocks inside</h2>
-      <div class="cols cols-2" style="margin-top:8px;">
+      <h2>A plugin is one package — skills, commands, agents, hooks, MCP &amp; permissions together</h2>
+      <div class="cols cols-3" style="margin-top:8px;">
         <div class="card card-orange">
-          <div style="font-size:32px; margin-bottom:12px;">🎯</div>
+          <div style="font-size:26px; margin-bottom:10px;">🎯</div>
           <h3 style="color:#d97706;">Skills</h3>
-          <p>Claude auto-applies them when context matches. You never type anything — they just fire.</p>
-          <p class="mt8" style="color:#555; font-size:13px;">Example: every UI you build follows your design system
-            automatically.</p>
+          <p>Auto-triggered guidance — Claude applies them silently when context matches. You never type anything.</p>
+          <p class="mt8" style="color:#555; font-size:13px;">Lives in <code style="font-size:11px;">skills/</code> folder. Example: every UI you build follows your design system automatically.</p>
         </div>
         <div class="card card-blue">
-          <div style="font-size:32px; margin-bottom:12px;">⚡</div>
+          <div style="font-size:26px; margin-bottom:10px;">⚡</div>
           <h3 style="color:#60a5fa;">Commands</h3>
-          <p>Slash commands you type to kick off a defined multi-step workflow.</p>
-          <p class="mt8" style="color:#555; font-size:13px;">Example: <code>/commit</code> — reads diff, matches commit
-            style, creates commit.</p>
+          <p>Slash commands you explicitly invoke to kick off a defined multi-step workflow.</p>
+          <p class="mt8" style="color:#555; font-size:13px;">Lives in <code style="font-size:11px;">commands/</code> folder. Example: <code>/standup</code> — reads git log, formats Yesterday / Today / Blockers.</p>
+        </div>
+        <div class="card" style="border-top:3px solid #06b6d4;">
+          <div style="font-size:26px; margin-bottom:10px;">🤖</div>
+          <h3 style="color:#06b6d4;">Agents</h3>
+          <p>Custom sub-agent types bundled with the plugin — Claude can spawn them to handle complex, focused tasks.</p>
+          <p class="mt8" style="color:#555; font-size:13px;">Lives in <code style="font-size:11px;">agents/</code> folder. Example: a <code style="font-size:11px;">code-reviewer</code> agent with its own system prompt and tool list.</p>
         </div>
         <div class="card card-purple">
-          <div style="font-size:32px; margin-bottom:12px;">🔌</div>
+          <div style="font-size:26px; margin-bottom:10px;">🔌</div>
           <h3 style="color:#a78bfa;">MCP Servers</h3>
-          <p>Gives Claude actual tool access — not just knowledge, but the ability to call APIs and run tools.</p>
-          <p class="mt8" style="color:#555; font-size:13px;">Example: Claude controls a real browser, creates GitHub
-            issues, reads Linear.</p>
+          <p>Gives Claude real tool access — not just knowledge, but the ability to call external APIs and run tools.</p>
+          <p class="mt8" style="color:#555; font-size:13px;">Defined in <code style="font-size:11px;">plugin.json</code> under <code style="font-size:11px;">mcpServers</code>. Example: browser automation, GitHub API, Linear board access.</p>
         </div>
         <div class="card card-green">
-          <div style="font-size:32px; margin-bottom:12px;">🪝</div>
+          <div style="font-size:26px; margin-bottom:10px;">🪝</div>
           <h3 style="color:#34d399;">Hooks</h3>
-          <p>Shell commands that run automatically on Claude Code lifecycle events — no prompt needed.</p>
-          <p class="mt8" style="color:#555; font-size:13px;">Example: run a linter after every file edit, or notify Slack when a session ends.</p>
+          <p>Shell scripts that run automatically on Claude Code lifecycle events — no prompt, no user action needed.</p>
+          <p class="mt8" style="color:#555; font-size:13px;">Lives in <code style="font-size:11px;">hooks/</code> folder. Example: run a linter after every file edit, or post to Slack when a session ends.</p>
+        </div>
+        <div class="card" style="border-top:3px solid #f59e0b;">
+          <div style="font-size:26px; margin-bottom:10px;">🔐</div>
+          <h3 style="color:#f59e0b;">Permissions</h3>
+          <p>Allow/deny lists that ship with the plugin — controls exactly which tools Claude may call.</p>
+          <p class="mt8" style="color:#555; font-size:13px;">Declared in <code style="font-size:11px;">settings.json</code>. Example: allow <code>Bash(npm run *)</code> but deny destructive file operations.</p>
         </div>
       </div>
       <div class="mt24">
-        <pre style="font-size:13px; line-height:1.8;"><span class="cmt"># One plugin can have all four, or just one — your choice</span>
-commit-commands/          <span class="cmt">← 3 Commands, no MCP, no Skills, no Hooks</span>
-playwright/               <span class="cmt">← 1 MCP server, no Commands</span>
-team-plugin/              <span class="cmt">← 1 Skill + 2 Commands, no MCP</span>
-your-plugin/              <span class="cmt">← mix whatever you need (incl. Hooks)</span></pre>
+        <pre style="font-size:13px; line-height:1.8;"><span class="cmt"># A plugin can use any combination — or just one building block</span>
+commit-commands/          <span class="cmt">← Commands + Permissions only</span>
+playwright/               <span class="cmt">← 1 MCP server + Permissions</span>
+team-plugin/              <span class="cmt">← Skills + Commands + Hooks</span>
+your-plugin/              <span class="cmt">← Skills, Agents, Hooks, MCP, Permissions — mix freely</span></pre>
       </div>
     </div>
 
@@ -726,7 +735,7 @@ your-plugin/              <span class="cmt">← mix whatever you need (incl. Hoo
               — or via GitHub at <code>anthropics/claude-plugins-official</code></li>
             <li>Two categories: <strong style="color:#d97706;">Internal</strong> (Anthropic-built) and <strong
                 style="color:#60a5fa;">External</strong> (community)</li>
-            <li>All plugins are plain Markdown — readable before installing</li>
+            <li>All plugins are plain text (Markdown + JSON + shell scripts) — readable before installing, no binary blobs</li>
           </ul>
           <div class="mt24">
             <div class="cmd-highlight">/plugin</div>
@@ -840,20 +849,24 @@ plugin-dev        <span class="cmt">build your own</span></pre>
     <!-- ─────────────────────────────────────── SLIDE 7 — Plugin structure ── -->
     <div class="slide slide-demo">
       <div class="eyebrow green">Build Your Own</div>
-      <h2>A plugin is just three files</h2>
+      <h2>A plugin is a plain folder — no build step</h2>
       <div class="cols cols-60-40">
         <div>
-          <pre style="font-size:13px;">team-plugin/
+          <pre style="font-size:13px;"><span class="cmt"># Full-featured example — use any combination</span>
+your-plugin/
 ├── .claude-plugin/
-│   └── <span class="fn">plugin.json</span>      <span class="cmt">← name, description, author</span>
+│   └── <span class="fn">plugin.json</span>      <span class="cmt">← name, description, author, mcpServers</span>
 ├── skills/
-│   └── team-standards/
+│   └── my-standards/
 │       └── <span class="fn">SKILL.md</span>    <span class="cmt">← auto-triggered guidance</span>
 ├── commands/
-│   ├── <span class="fn">standup.md</span>      <span class="cmt">← /standup</span>
-│   └── <span class="fn">ticket.md</span>       <span class="cmt">← /ticket AUTH-234</span>
-└── hooks/
-    └── <span class="fn">post-edit.sh</span>    <span class="cmt">← runs after every file edit</span></pre>
+│   ├── <span class="fn">standup.md</span>      <span class="cmt">← /standup slash command</span>
+│   └── <span class="fn">ticket.md</span>       <span class="cmt">← /ticket &lt;id&gt; slash command</span>
+├── agents/
+│   └── <span class="fn">reviewer.md</span>     <span class="cmt">← custom sub-agent type</span>
+├── hooks/
+│   └── <span class="fn">post-edit.sh</span>    <span class="cmt">← runs after every file edit</span>
+└── <span class="fn">settings.json</span>        <span class="cmt">← permissions allow/deny</span></pre>
           <div class="mt16">
             <pre
               style="font-size:13px;"><span class="cmt"># Install for the team (copy to project plugins dir)</span>
@@ -873,8 +886,7 @@ cp -r team-plugin .claude/plugins/
   }
 }</pre>
           <div class="card card-green mt16" style="padding:16px 20px;">
-            <p style="font-size:13px; color:#888; line-height:1.6;">No build step. No compilation. Plain Markdown.
-              Version-controlled like any code.</p>
+            <p style="font-size:13px; color:#888; line-height:1.6;">No build step. No compilation. Plain text — Markdown, JSON, shell scripts. Version-controlled like any code.</p>
           </div>
         </div>
       </div>
@@ -940,12 +952,12 @@ cp -r team-plugin .claude/plugins/
             style="font-size:12px; color:#555; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">
             What Claude does:</p>
           <ul style="gap:5px;">
-            <li style="font-size:12px; color:#888;">Reads ticket title from Linear / Jira</li>
-            <li style="font-size:12px; color:#888;">Creates <code style="font-size:10px;">kebab-case</code> branch name
-            </li>
-            <li style="font-size:12px; color:#888;">Checks out the new branch ready to code</li>
+            <li style="font-size:12px; color:#888;">Validates the ticket ID format (e.g. <code style="font-size:10px;">AUTH-234</code>)</li>
+            <li style="font-size:12px; color:#888;">Prompts you for a one-line description</li>
+            <li style="font-size:12px; color:#888;">Creates <code style="font-size:10px;">kebab-case</code> branch and checks it out</li>
           </ul>
           <pre style="font-size:11px; margin-top:10px; padding:10px 14px; line-height:1.6;"><span class="fn">/ticket</span> <span class="str">AUTH-234</span>
+<span class="cmt"># Claude: "What is this ticket about?"</span>
 <span class="cmt"># → auth-234/add-refresh-token-rotation</span></pre>
         </div>
 
@@ -1084,7 +1096,7 @@ git clone https://github.com/&lt;org&gt;/&lt;plugin-repo&gt; \
         <tr>
           <td>Activation</td>
           <td class="bad-col">You include it in every prompt</td>
-          <td class="good-col">Auto-fires when context matches</td>
+          <td class="good-col">Skills auto-fire; Commands on demand; Hooks on events</td>
         </tr>
         <tr>
           <td>Persistence</td>
@@ -1185,8 +1197,8 @@ git clone https://github.com/&lt;org&gt;/&lt;plugin-repo&gt; \
         </div>
         <div
           style="display:flex; gap:14px; align-items:center; background:#111; border:1px solid #222; border-radius:8px; padding:10px 16px;">
-          <code style="font-size:13px; color:#60a5fa;">/revise-claude-md</code>
-          <span style="color:#444; font-size:13px;">after today's session</span>
+          <code style="font-size:13px; color:#60a5fa;">/doctor</code>
+          <span style="color:#444; font-size:13px;">verify plugins loaded correctly</span>
         </div>
       </div>
       <p style="margin-top:32px; font-size:13px; color:#2a2a2a;">Marketplace →
