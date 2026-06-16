@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>claude-mem — Persistent Memory for Claude Code</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0d0d0d;
+      color: #e8e8e8;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    .deck {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 72px 96px;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .slide.active {
+      display: flex;
+      opacity: 1;
+      overflow-y: auto;
+      height: 100%;
+    }
+
+    .slide-title {
+      background: radial-gradient(ellipse at 30% 50%, #0e1a2e 0%, #0d0d0d 70%);
+      align-items: center;
+      text-align: center;
+    }
+
+    .slide-section {
+      background: linear-gradient(135deg, #111827 0%, #0d0d0d 100%);
+      border-left: 5px solid #3b82f6;
+    }
+
+    .slide-content {
+      margin: 10px auto;
+      background: #111111;
+    }
+
+    .slide-demo {
+      background: #0f1117;
+      border-left: 5px solid #3b82f6;
+    }
+
+    .slide-compare {
+      background: #0f1117;
+    }
+
+    .slide-callout {
+      background: linear-gradient(135deg, #0e1a2e 0%, #0d0d0d 100%);
+      align-items: center;
+      text-align: center;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #3b82f6;
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+
+    .eyebrow.orange { color: #d97706; }
+    .eyebrow.green  { color: #34d399; }
+    .eyebrow.purple { color: #a78bfa; }
+    .eyebrow.red    { color: #f87171; }
+
+    h1 {
+      font-size: 56px;
+      font-weight: 800;
+      line-height: 1.1;
+      color: #f5f5f5;
+      letter-spacing: -1.5px;
+    }
+
+    h1 span { color: #3b82f6; }
+
+    h2 {
+      font-size: 38px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: #f0f0f0;
+      letter-spacing: -0.5px;
+      margin-bottom: 32px;
+    }
+
+    h3 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #c0c0c0;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 20px;
+      color: #888;
+      margin-top: 16px;
+      max-width: 620px;
+      line-height: 1.6;
+    }
+
+    p {
+      font-size: 18px;
+      line-height: 1.7;
+      color: #c8c8c8;
+      max-width: 760px;
+    }
+
+    code, pre {
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+    }
+
+    pre {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 20px 24px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #d4d4d4;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .kw  { color: #60a5fa; }
+    .fn  { color: #fbbf24; }
+    .str { color: #34d399; }
+    .cmt { color: #555; font-style: italic; }
+    .bad  { color: #f87171; }
+    .good { color: #34d399; }
+
+    code {
+      background: #1e1e1e;
+      border: 1px solid #2a2a2a;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 15px;
+      color: #fbbf24;
+    }
+
+    .cols { display: grid; gap: 32px; width: 100%; align-items: start; }
+    .cols-2    { grid-template-columns: 1fr 1fr; }
+    .cols-3    { grid-template-columns: minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); }
+    .cols-60-40 { grid-template-columns: 60fr 40fr; }
+    .cols-40-60 { grid-template-columns: 40fr 60fr; }
+
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #252525;
+      border-radius: 12px;
+      padding: 24px 28px;
+    }
+
+    .card-blue   { border-top: 3px solid #3b82f6; }
+    .card-orange { border-top: 3px solid #d97706; }
+    .card-purple { border-top: 3px solid #a78bfa; }
+    .card-green  { border-top: 3px solid #34d399; }
+    .card-red    { border-top: 3px solid #f87171; }
+
+    .card h3 { font-size: 16px; margin-bottom: 10px; }
+    .card p  { font-size: 14px; color: #888; line-height: 1.6; }
+
+    ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 760px;
+    }
+
+    li {
+      font-size: 17px;
+      line-height: 1.6;
+      color: #c0c0c0;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    li::before {
+      content: "›";
+      position: absolute;
+      left: 0;
+      color: #3b82f6;
+      font-weight: 700;
+    }
+
+    li.orange::before { color: #d97706; }
+    li.green::before  { color: #34d399; }
+    li.purple::before { color: #a78bfa; }
+    li.red::before    { color: #f87171; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 15px; }
+
+    th {
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 1px solid #333;
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #666;
+      font-weight: 600;
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #1e1e1e;
+      color: #c0c0c0;
+      line-height: 1.5;
+    }
+
+    td:first-child { color: #888; font-size: 13px; }
+    td.bad-col  { color: #f87171; }
+    td.good-col { color: #34d399; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .badge-blue {
+      background: rgba(59,130,246,0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59,130,246,0.3);
+    }
+
+    .quote {
+      font-size: 32px;
+      font-weight: 300;
+      line-height: 1.5;
+      color: #e0e0e0;
+      max-width: 840px;
+      letter-spacing: -0.3px;
+    }
+
+    .quote em {
+      color: #3b82f6;
+      font-style: normal;
+      font-weight: 600;
+    }
+
+    .stat {
+      font-size: 72px;
+      font-weight: 800;
+      color: #3b82f6;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .nav {
+      position: fixed;
+      bottom: 32px;
+      right: 48px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 100;
+    }
+
+    .nav-btn {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      color: #888;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .nav-btn:hover {
+      background: #2a2a2a;
+      color: #e0e0e0;
+      border-color: #555;
+    }
+
+    .nav-count {
+      font-size: 12px;
+      color: #444;
+      font-variant-numeric: tabular-nums;
+      min-width: 56px;
+      text-align: center;
+    }
+
+    .progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 2px;
+      background: #3b82f6;
+      transition: width 0.3s ease;
+      z-index: 100;
+    }
+
+    .slide-num {
+      position: fixed;
+      top: 28px;
+      right: 48px;
+      font-size: 11px;
+      color: #333;
+      letter-spacing: 1px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .divider {
+      width: 48px;
+      height: 3px;
+      background: #3b82f6;
+      border-radius: 2px;
+      margin: 20px 0 28px;
+    }
+
+    .divider.orange { background: #d97706; }
+    .divider.green  { background: #34d399; }
+    .divider.purple { background: #a78bfa; }
+    .divider.red    { background: #f87171; }
+
+    .cmd-highlight {
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 28px;
+      font-weight: 700;
+      color: #fbbf24;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 16px 28px;
+      display: inline-block;
+      margin: 12px 0;
+    }
+
+    .mt8  { margin-top: 8px; }
+    .mt16 { margin-top: 16px; }
+    .mt24 { margin-top: 24px; }
+    .mt32 { margin-top: 32px; }
+    .mb16 { margin-bottom: 16px; }
+
+    /* step number badge */
+    .step-num {
+      font-size: 13px;
+      font-weight: 700;
+      color: #3b82f6;
+      background: rgba(59,130,246,0.12);
+      border: 1px solid rgba(59,130,246,0.25);
+      border-radius: 6px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    @media print {
+      body { overflow: visible; }
+      .slide {
+        display: flex !important;
+        opacity: 1 !important;
+        position: relative !important;
+        page-break-after: always;
+        height: 100vh;
+      }
+      .nav, .progress, .slide-num { display: none; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="progress" id="progress"></div>
+  <div class="slide-num" id="slideNum"></div>
+
+  <div class="deck" id="deck">
+
+    <!-- ── SLIDE 1 — Title ── -->
+    <div class="slide slide-title active">
+      <div class="eyebrow">Engineering Session · Claude Code · Memory</div>
+      <h1>claude-<span>mem</span></h1>
+      <p class="subtitle">Persistent memory across Claude Code sessions — automatic context capture, semantic search, and intelligent injection.</p>
+      <div style="margin-top:48px; display:flex; gap:32px; align-items:center;">
+        <div style="text-align:left;">
+          <div style="font-size:12px; color:#444; letter-spacing:2px; text-transform:uppercase; margin-bottom:4px;">Source</div>
+          <div style="font-size:18px; color:#888;">github.com/thedotmack/claude-mem</div>
+        </div>
+        <div style="width:1px; height:40px; background:#222;"></div>
+        <div style="text-align:left;">
+          <div style="font-size:12px; color:#444; letter-spacing:2px; text-transform:uppercase; margin-bottom:4px;">Format</div>
+          <div style="font-size:18px; color:#888;">Concept · Demo · Hands-on</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SLIDE 2 — Agenda ── -->
+    <div class="slide slide-content" style="justify-content:center;">
+      <div class="eyebrow">Today's Session</div>
+      <h2>What we'll cover</h2>
+      <div class="cols cols-2" style="margin-top:8px; max-width:900px;">
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; align-items:flex-start; gap:16px;">
+            <div class="step-num">01</div>
+            <div><div style="font-size:16px; font-weight:600; color:#e8e8e8; margin-bottom:2px;">The Problem</div><div style="font-size:13px; color:#555;">Why Claude forgets everything between sessions</div></div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:16px;">
+            <div class="step-num">02</div>
+            <div><div style="font-size:16px; font-weight:600; color:#e8e8e8; margin-bottom:2px;">Purpose</div><div style="font-size:13px; color:#555;">What claude-mem is and why it exists</div></div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:16px;">
+            <div class="step-num">03</div>
+            <div><div style="font-size:16px; font-weight:600; color:#e8e8e8; margin-bottom:2px;">How It Works</div><div style="font-size:13px; color:#555;">Architecture — hooks, SQLite, vector search, worker</div></div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:16px;">
+            <div class="step-num">04</div>
+            <div><div style="font-size:16px; font-weight:600; color:#e8e8e8; margin-bottom:2px;">Installation &amp; Setup</div><div style="font-size:13px; color:#555;">One command install, configuration options</div></div>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; align-items:flex-start; gap:16px;">
+            <div class="step-num" style="color:#34d399; background:rgba(52,211,153,0.1); border-color:rgba(52,211,153,0.25);">05</div>
+            <div><div style="font-size:16px; font-weight:600; color:#e8e8e8; margin-bottom:2px;">Usage</div><div style="font-size:13px; color:#555;">Search, timeline, observation retrieval, web UI</div></div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:16px;">
+            <div class="step-num" style="color:#34d399; background:rgba(52,211,153,0.1); border-color:rgba(52,211,153,0.25);">06</div>
+            <div><div style="font-size:16px; font-weight:600; color:#e8e8e8; margin-bottom:2px;">Pros</div><div style="font-size:13px; color:#555;">What it solves well and where it shines</div></div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:16px;">
+            <div class="step-num" style="color:#f87171; background:rgba(248,113,113,0.1); border-color:rgba(248,113,113,0.25);">07</div>
+            <div><div style="font-size:16px; font-weight:600; color:#e8e8e8; margin-bottom:2px;">Cons &amp; Trade-offs</div><div style="font-size:13px; color:#555;">Dependencies, complexity, limitations</div></div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:16px;">
+            <div class="step-num" style="color:#a78bfa; background:rgba(167,139,250,0.1); border-color:rgba(167,139,250,0.25);">08</div>
+            <div><div style="font-size:16px; font-weight:600; color:#e8e8e8; margin-bottom:2px;">Hands-on Example</div><div style="font-size:13px; color:#555;">Real-world scenario — end-to-end walkthrough</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SLIDE 3 — The Problem ── -->
+    <div class="slide slide-content">
+      <div class="eyebrow orange">The Problem</div>
+      <h2>Every new session, Claude starts from zero</h2>
+      <div class="cols cols-2" style="margin-top:8px;">
+        <div>
+          <p style="font-size:14px; color:#666; margin-bottom:12px;">Tuesday — deep debugging session</p>
+          <pre>"Found the root cause: the race condition
+in <span class="fn">useAuth</span> happens when token refresh
+fires during route transition. Fixed it
+by deferring the refresh to the <span class="str">onIdle</span>
+lifecycle hook."
+
+<span class="good">// 2-hour investigation. Problem solved.</span></pre>
+        </div>
+        <div>
+          <p style="font-size:14px; color:#666; margin-bottom:12px;">Wednesday (new session)</p>
+          <pre><span class="bad">// Session context: zero.</span>
+"I see a useAuth hook.
+What's the issue you're working on?"
+
+<span class="bad">// All investigation context: gone.</span>
+<span class="bad">// Architecture decisions: gone.</span>
+<span class="bad">// Two hours re-explained every time.</span></pre>
+        </div>
+      </div>
+      <div class="card mt32" style="background:rgba(59,130,246,0.08); border-color:rgba(59,130,246,0.2); padding:20px 24px; border-radius:10px;">
+        <p style="color:#60a5fa; font-size:16px; font-weight:500;">claude-mem gives Claude a <em style="font-style:normal; font-weight:700;">persistent long-term memory</em> — captured automatically, retrieved semantically, and injected intelligently at the start of each new session.</p>
+      </div>
+    </div>
+
+    <!-- ── SLIDE 4 — Purpose ── -->
+    <div class="slide slide-content" style="overflow-y:auto; justify-content:flex-start;">
+      <div class="eyebrow">Purpose</div>
+      <h2>What claude-mem actually does</h2>
+      <p style="margin-bottom:28px; font-size:16px; color:#888;">It's a memory compression system that monitors every session in the background, records what Claude does and observes, compresses it semantically, and silently brings it back the next time you work on the same thing.</p>
+      <div class="cols cols-2" style="margin-top:0;">
+        <div class="card card-blue">
+          <div style="font-size:32px; margin-bottom:12px;">🧠</div>
+          <h3 style="color:#60a5fa;">Capture</h3>
+          <p>Hooks into Claude's tool lifecycle. Every file read, edit, and search generates an <strong style="color:#d4d4d4;">observation</strong> that gets stored automatically.</p>
+          <p class="mt8" style="color:#555; font-size:13px;">You do nothing. The hooks handle it.</p>
+        </div>
+        <div class="card card-green">
+          <div style="font-size:32px; margin-bottom:12px;">🗜️</div>
+          <h3 style="color:#34d399;">Compress</h3>
+          <p>A worker process compresses raw observations into concise AI-generated summaries — filtering noise, preserving insight.</p>
+          <p class="mt8" style="color:#555; font-size:13px;">Token cost is amortized at write time, not read time.</p>
+        </div>
+        <div class="card card-purple">
+          <div style="font-size:32px; margin-bottom:12px;">🔍</div>
+          <h3 style="color:#a78bfa;">Retrieve</h3>
+          <p>Hybrid semantic + keyword search over a vector database (Chroma). Ask in natural language — it finds what's relevant.</p>
+          <p class="mt8" style="color:#555; font-size:13px;">Three-layer retrieval: index → IDs → full details.</p>
+        </div>
+        <div class="card card-orange">
+          <div style="font-size:32px; margin-bottom:12px;">💉</div>
+          <h3 style="color:#d97706;">Inject</h3>
+          <p>At session start, relevant memory is automatically injected into Claude's context — no prompting needed.</p>
+          <p class="mt8" style="color:#555; font-size:13px;">Progressive disclosure keeps token usage minimal.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SLIDE 5 — Architecture ── -->
+    <div class="slide slide-demo" style="overflow-y:auto; justify-content:flex-start;">
+      <div class="eyebrow">Architecture</div>
+      <h2>Five hooks + one worker = persistent context</h2>
+      <div class="cols cols-60-40" style="margin-top:0;">
+        <div>
+          <p style="font-size:12px; color:#555; letter-spacing:1px; text-transform:uppercase; margin-bottom:12px;">Lifecycle hooks — what fires when</p>
+          <div style="display:flex; flex-direction:column; gap:0; margin-bottom:20px;">
+            <div style="background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px 8px 0 0; padding:10px 16px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="color:#60a5fa; font-weight:700; font-size:13px;">SessionStart</span>
+              <span style="color:#555; font-size:12px;">→ injects relevant past memory into context</span>
+            </div>
+            <div style="background:#161616; border:1px solid #2a2a2a; border-left:1px solid #2a2a2a; border-right:1px solid #2a2a2a; padding:10px 16px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="color:#fbbf24; font-weight:700; font-size:13px;">UserPromptSubmit</span>
+              <span style="color:#555; font-size:12px;">→ records the user's intent</span>
+            </div>
+            <div style="background:#1a1a1a; border:1px solid #2a2a2a; border-left:1px solid #2a2a2a; border-right:1px solid #2a2a2a; padding:10px 16px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="color:#34d399; font-weight:700; font-size:13px;">PostToolUse</span>
+              <span style="color:#555; font-size:12px;">→ stores tool result observations</span>
+            </div>
+            <div style="background:#161616; border:1px solid #2a2a2a; border-left:1px solid #2a2a2a; border-right:1px solid #2a2a2a; padding:10px 16px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="color:#a78bfa; font-weight:700; font-size:13px;">Stop</span>
+              <span style="color:#555; font-size:12px;">→ triggers compression of session batch</span>
+            </div>
+            <div style="background:#1a1a1a; border:1px solid #2a2a2a; border-radius:0 0 8px 8px; padding:10px 16px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="color:#f87171; font-weight:700; font-size:13px;">SessionEnd</span>
+              <span style="color:#555; font-size:12px;">→ final summary &amp; cleanup</span>
+            </div>
+          </div>
+          <pre style="font-size:13px;"><span class="cmt"># Storage stack</span>
+SQLite            <span class="cmt">← sessions, raw observations</span>
+Chroma (vectors)  <span class="cmt">← semantic search index</span>
+Worker :37777     <span class="cmt">← HTTP API + web viewer</span></pre>
+        </div>
+        <div>
+          <p style="font-size:12px; color:#555; letter-spacing:1px; text-transform:uppercase; margin-bottom:12px;">Memory retrieval flow</p>
+          <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+            <div style="background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; padding:12px 16px;">
+              <span style="color:#3b82f6; font-size:12px; font-weight:700; letter-spacing:1px;">STEP 1</span><br/>
+              <span style="color:#e0e0e0; font-size:13px; font-weight:600;">Search index</span><br/>
+              <span style="color:#555; font-size:12px;">Compact result — cheap tokens</span>
+            </div>
+            <div style="text-align:center; color:#333; font-size:14px; padding:2px 0;">↓</div>
+            <div style="background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; padding:12px 16px;">
+              <span style="color:#34d399; font-size:12px; font-weight:700; letter-spacing:1px;">STEP 2</span><br/>
+              <span style="color:#e0e0e0; font-size:13px; font-weight:600;">Identify relevant IDs</span><br/>
+              <span style="color:#555; font-size:12px;">Filter to what's actually needed</span>
+            </div>
+            <div style="text-align:center; color:#333; font-size:14px; padding:2px 0;">↓</div>
+            <div style="background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; padding:12px 16px;">
+              <span style="color:#a78bfa; font-size:12px; font-weight:700; letter-spacing:1px;">STEP 3</span><br/>
+              <span style="color:#e0e0e0; font-size:13px; font-weight:600;">Fetch full details</span><br/>
+              <span style="color:#555; font-size:12px;">Only for the IDs you chose</span>
+            </div>
+          </div>
+          <div class="card card-blue" style="padding:12px 16px;">
+            <p style="font-size:12px; color:#60a5fa; line-height:1.6;"><strong>Progressive disclosure</strong> — never loads everything at once. Claimed 10× token savings vs. dumping full context.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SLIDE 6 — Installation ── -->
+    <div class="slide slide-demo" style="overflow-y:auto; justify-content:flex-start;">
+      <div class="eyebrow">Installation</div>
+      <h2>Set up in one command</h2>
+      <div class="cols cols-2" style="margin-top:0;">
+        <div>
+          <p style="font-size:13px; color:#555; letter-spacing:1px; text-transform:uppercase; margin-bottom:12px;">Install</p>
+          <pre style="font-size:13px;"><span class="cmt"># Claude Code (default)</span>
+<span class="fn">npx</span> claude-mem install
+
+<span class="cmt"># Gemini CLI</span>
+<span class="fn">npx</span> claude-mem install <span class="kw">--ide</span> gemini-cli
+
+<span class="cmt"># OpenCode</span>
+<span class="fn">npx</span> claude-mem install <span class="kw">--ide</span> opencode
+
+<span class="cmt"># Via plugin marketplace</span>
+<span class="fn">/plugin</span> marketplace add thedotmack/claude-mem
+<span class="fn">/plugin</span> install claude-mem</pre>
+          <div class="card card-green mt16" style="padding:14px 18px;">
+            <p style="font-size:13px; color:#888; line-height:1.6;">Requires <strong style="color:#d4d4d4;">Node.js 20+</strong>. Bun and Python <code style="font-size:11px;">uv</code> (for Chroma) auto-install on first run.</p>
+          </div>
+        </div>
+        <div>
+          <p style="font-size:13px; color:#555; letter-spacing:1px; text-transform:uppercase; margin-bottom:12px;">Configuration — <code style="font-size:11px; text-transform:none;">~/.claude-mem/settings.json</code></p>
+          <pre style="font-size:12.5px; line-height:1.8;">{
+  <span class="str">"model"</span>: <span class="str">"claude-sonnet-4-5"</span>,
+  <span class="str">"workerPort"</span>: <span class="fn">37777</span>,
+  <span class="str">"dataDir"</span>: <span class="str">"~/.claude-mem/data"</span>,
+  <span class="str">"logLevel"</span>: <span class="str">"info"</span>,
+  <span class="str">"contextInjection"</span>: <span class="fn">true</span>,
+  <span class="str">"CLAUDE_MEM_MODE"</span>: <span class="str">"code"</span>
+}</pre>
+          <div class="card mt16" style="padding:14px 18px; border-left:3px solid #a78bfa;">
+            <p style="font-size:12px; color:#888; line-height:1.7;">Mark sensitive content with <code style="font-size:11px;">&lt;private&gt;...&lt;/private&gt;</code> tags — claude-mem will skip capturing that content.</p>
+          </div>
+          <div class="card mt16" style="padding:14px 18px; border-left:3px solid #3b82f6;">
+            <p style="font-size:12px; color:#888; line-height:1.7;">Web viewer available at <code style="font-size:11px;">http://localhost:37777</code> once the worker starts.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SLIDE 7 — Usage ── -->
+    <div class="slide slide-demo" style="overflow-y:auto; justify-content:flex-start;">
+      <div class="eyebrow green">Usage</div>
+      <h2>Querying your memory</h2>
+      <div class="cols cols-2" style="margin-top:0; gap:24px;">
+        <div>
+          <p style="font-size:12px; color:#34d399; letter-spacing:1px; text-transform:uppercase; margin-bottom:10px;">mem-search skill (natural language)</p>
+          <pre style="font-size:13px;"><span class="cmt"># Find observations about auth bugs</span>
+<span class="fn">search</span>(
+  query=<span class="str">"authentication bug"</span>,
+  type=<span class="str">"bugfix"</span>,
+  limit=<span class="fn">10</span>
+)
+
+<span class="cmt"># Get chronological context around event</span>
+<span class="fn">timeline</span>(observation_id=<span class="fn">123</span>)
+
+<span class="cmt"># Fetch full observation details by IDs</span>
+<span class="fn">get_observations</span>(ids=[<span class="fn">123</span>, <span class="fn">456</span>, <span class="fn">789</span>])
+
+<span class="cmt"># Generate a bug report from memory</span>
+npm run bug-report</pre>
+        </div>
+        <div>
+          <p style="font-size:12px; color:#60a5fa; letter-spacing:1px; text-transform:uppercase; margin-bottom:10px;">Web viewer — localhost:37777</p>
+          <div class="card card-blue" style="padding:16px 20px; margin-bottom:14px;">
+            <p style="font-size:13px; color:#888; line-height:1.7;">Real-time stream of observations as they're captured. Browse by session, search by keyword, inspect raw observations.</p>
+          </div>
+          <p style="font-size:12px; color:#60a5fa; letter-spacing:1px; text-transform:uppercase; margin-bottom:10px;">REST API</p>
+          <pre style="font-size:12.5px;"><span class="cmt"># Fetch a specific observation</span>
+GET localhost:37777/api/observation/<span class="fn">123</span>
+
+<span class="cmt"># List sessions</span>
+GET localhost:37777/api/sessions</pre>
+          <div class="card card-purple mt16" style="padding:14px 18px;">
+            <p style="font-size:12px; color:#888; line-height:1.7;">Automatic injection: you don't need to call <code style="font-size:11px;">search()</code> manually. The <code style="font-size:11px;">SessionStart</code> hook does it silently before your first message.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SLIDE 8 — Pros ── -->
+    <div class="slide slide-content" style="overflow-y:auto; justify-content:flex-start;">
+      <div class="eyebrow green">Pros</div>
+      <h2>Where claude-mem shines</h2>
+      <div class="cols cols-3" style="margin-top:0;">
+        <div class="card card-green">
+          <div style="font-size:28px; margin-bottom:10px;">🤖</div>
+          <h3 style="color:#34d399; font-size:15px;">Fully automatic</h3>
+          <p style="font-size:13px;">Zero manual effort. Install once — hooks capture every session silently. No CLAUDE.md edits, no prompting discipline required.</p>
+        </div>
+        <div class="card card-blue">
+          <div style="font-size:28px; margin-bottom:10px;">💰</div>
+          <h3 style="color:#60a5fa; font-size:15px;">Token-efficient</h3>
+          <p style="font-size:13px;">Progressive disclosure (index → IDs → details) avoids loading the full history. Only relevant context is injected — up to 10× savings claimed.</p>
+        </div>
+        <div class="card card-purple">
+          <div style="font-size:28px; margin-bottom:10px;">🔍</div>
+          <h3 style="color:#a78bfa; font-size:15px;">Semantic search</h3>
+          <p style="font-size:13px;">Chroma vector DB means you can query memory in plain English — not just exact-string matching. "What did we decide about the token refresh?" just works.</p>
+        </div>
+        <div class="card card-orange">
+          <div style="font-size:28px; margin-bottom:10px;">🔒</div>
+          <h3 style="color:#d97706; font-size:15px;">Privacy controls</h3>
+          <p style="font-size:13px;"><code style="font-size:11px;">&lt;private&gt;</code> tags give per-content exclusion. Credentials, PII, and sensitive notes stay out of the memory store entirely.</p>
+        </div>
+        <div class="card" style="border-top:3px solid #34d399;">
+          <div style="font-size:28px; margin-bottom:10px;">🌐</div>
+          <h3 style="color:#34d399; font-size:15px;">Multi-platform</h3>
+          <p style="font-size:13px;">Works with Claude Code, Gemini CLI, OpenCode, and OpenClaw. One memory store spans all your AI assistants.</p>
+        </div>
+        <div class="card" style="border-top:3px solid #60a5fa;">
+          <div style="font-size:28px; margin-bottom:10px;">🕰️</div>
+          <h3 style="color:#60a5fa; font-size:15px;">Timeline context</h3>
+          <p style="font-size:13px;"><code style="font-size:11px;">timeline()</code> retrieves the chronological window around any observation — great for reconstructing what led to a decision.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SLIDE 9 — Cons ── -->
+    <div class="slide slide-content" style="overflow-y:auto; justify-content:flex-start;">
+      <div class="eyebrow red">Cons &amp; Trade-offs</div>
+      <h2>Know the limitations before adopting</h2>
+      <div class="cols cols-2" style="margin-top:0; gap:28px;">
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div class="card card-red" style="padding:18px 20px;">
+            <h3 style="color:#f87171; font-size:15px; margin-bottom:8px;">Heavy dependency stack</h3>
+            <p style="font-size:13px; color:#888; line-height:1.7;">Requires Node.js 20+, auto-installs Bun, and pulls in Python <code style="font-size:11px;">uv</code> + Chroma for vector search. That's a significant footprint for a dev tool.</p>
+          </div>
+          <div class="card card-red" style="padding:18px 20px;">
+            <h3 style="color:#f87171; font-size:15px; margin-bottom:8px;">Local worker process required</h3>
+            <p style="font-size:13px; color:#888; line-height:1.7;">A background worker on port 37777 must be running for memory to work. Adds one more long-running process to manage alongside your dev stack.</p>
+          </div>
+          <div class="card card-red" style="padding:18px 20px;">
+            <h3 style="color:#f87171; font-size:15px; margin-bottom:8px;">Beta / experimental features</h3>
+            <p style="font-size:13px; color:#888; line-height:1.7;">Endless Mode and several other features are labelled beta. API shape and behaviour may change. Not production-hardened yet.</p>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div class="card card-red" style="padding:18px 20px;">
+            <h3 style="color:#f87171; font-size:15px; margin-bottom:8px;">Windows PATH issues</h3>
+            <p style="font-size:13px; color:#888; line-height:1.7;">Windows users need manual PATH adjustments for Bun and uv. First-run experience is rougher than on macOS/Linux.</p>
+          </div>
+          <div class="card card-red" style="padding:18px 20px;">
+            <h3 style="color:#f87171; font-size:15px; margin-bottom:8px;">Memory quality depends on AI compression</h3>
+            <p style="font-size:13px; color:#888; line-height:1.7;">Summaries are generated by a model — they can mis-summarise or drop nuance. Garbage-in, garbage-out: if the compression model makes a mistake, that mistake is what gets retrieved later.</p>
+          </div>
+          <div class="card card-red" style="padding:18px 20px;">
+            <h3 style="color:#f87171; font-size:15px; margin-bottom:8px;">Disk &amp; compute overhead</h3>
+            <p style="font-size:13px; color:#888; line-height:1.7;">Every tool call writes an observation. Over weeks of use on large projects, SQLite + Chroma storage can grow substantially without manual pruning.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SLIDE 10 — Quick comparison ── -->
+    <div class="slide slide-compare">
+      <div class="eyebrow">Comparison</div>
+      <h2>claude-mem vs Manual CLAUDE.md</h2>
+      <table style="margin-top:16px;">
+        <tr>
+          <th>Aspect</th>
+          <th style="color:#888;">Manual CLAUDE.md</th>
+          <th class="good-col">claude-mem</th>
+        </tr>
+        <tr>
+          <td>Setup effort</td>
+          <td>Write rules manually, maintain them</td>
+          <td class="good-col">One install command — hooks do the rest</td>
+        </tr>
+        <tr>
+          <td>Captures decisions</td>
+          <td class="bad-col">Only what you manually write down</td>
+          <td class="good-col">Every tool call, every observation, automatically</td>
+        </tr>
+        <tr>
+          <td>Search</td>
+          <td class="bad-col">Claude reads the whole file</td>
+          <td class="good-col">Semantic vector search — finds relevant context</td>
+        </tr>
+        <tr>
+          <td>Token cost</td>
+          <td>File grows → cost grows linearly</td>
+          <td class="good-col">Progressive disclosure keeps cost stable</td>
+        </tr>
+        <tr>
+          <td>Dependencies</td>
+          <td class="good-col">None — plain markdown file</td>
+          <td class="bad-col">Node.js, Bun, Python uv, Chroma, worker process</td>
+        </tr>
+        <tr>
+          <td>Reliability</td>
+          <td class="good-col">File is always there</td>
+          <td>Worker must be running; beta features may break</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- ── SLIDE 11 — Hands-on intro ── -->
+    <div class="slide slide-section">
+      <h2>Hands-on Practice</h2>
+      <div class="divider purple"></div>
+      <p class="quote">"Memory is only useful if you can <em>get it back</em> when you need it."</p>
+      <p style="margin-top:20px; font-size:16px; color:#555;">Follow this scenario end-to-end to see claude-mem in action.</p>
+    </div>
+
+    <!-- ── SLIDE 12 — Hands-on steps ── -->
+    <div class="slide slide-demo" style="overflow-y:auto; justify-content:flex-start;">
+      <div class="eyebrow purple">Hands-on · Steps 1–3</div>
+      <h2>Scenario: debug a bug, come back tomorrow</h2>
+      <div class="cols cols-2" style="margin-top:0; gap:24px;">
+        <div>
+          <div style="display:flex; align-items:flex-start; gap:14px; margin-bottom:20px;">
+            <div class="step-num">1</div>
+            <div>
+              <p style="font-size:14px; font-weight:600; color:#e0e0e0; margin-bottom:6px;">Install claude-mem</p>
+              <pre style="font-size:12.5px; padding:12px 16px; line-height:1.8;"><span class="fn">npx</span> claude-mem install
+<span class="cmt"># Confirm hooks are added to</span>
+<span class="cmt"># ~/.claude/settings.json</span></pre>
+              <p style="font-size:12px; color:#555; margin-top:6px; line-height:1.6;">Open a new Claude Code session after install. The worker starts automatically on first session.</p>
+            </div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:14px; margin-bottom:20px;">
+            <div class="step-num">2</div>
+            <div>
+              <p style="font-size:14px; font-weight:600; color:#e0e0e0; margin-bottom:6px;">Trigger a realistic investigation</p>
+              <pre style="font-size:12.5px; padding:12px 16px; line-height:1.8;"><span class="cmt"># In Claude Code, ask:</span>
+"The login form submits twice on mobile.
+ Investigate and find the root cause in
+ src/components/LoginForm.tsx"
+
+<span class="cmt"># Claude reads files, greps the codebase,</span>
+<span class="cmt"># and makes edits — all captured as</span>
+<span class="cmt"># observations by PostToolUse hook.</span></pre>
+            </div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:14px;">
+            <div class="step-num">3</div>
+            <div>
+              <p style="font-size:14px; font-weight:600; color:#e0e0e0; margin-bottom:6px;">End the session</p>
+              <pre style="font-size:12.5px; padding:12px 16px; line-height:1.8;"><span class="cmt"># Close Claude Code (or type /exit)</span>
+<span class="cmt"># SessionEnd hook fires:</span>
+<span class="cmt"># observations → compressed → SQLite + Chroma</span></pre>
+              <p style="font-size:12px; color:#555; margin-top:6px; line-height:1.6;">Check the web viewer at <code style="font-size:11px;">localhost:37777</code> to see captured observations.</p>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex; align-items:flex-start; gap:14px; margin-bottom:20px;">
+            <div class="step-num" style="color:#34d399; background:rgba(52,211,153,0.1); border-color:rgba(52,211,153,0.25);">4</div>
+            <div>
+              <p style="font-size:14px; font-weight:600; color:#e0e0e0; margin-bottom:6px;">Start a new session — watch auto-inject</p>
+              <pre style="font-size:12.5px; padding:12px 16px; line-height:1.8;"><span class="cmt"># Open fresh Claude Code session.</span>
+<span class="cmt"># SessionStart hook fires silently.</span>
+<span class="cmt"># Claude already knows:</span>
+<span class="cmt"># - you were debugging LoginForm.tsx</span>
+<span class="cmt"># - the double-submit root cause</span>
+<span class="cmt"># - files read during investigation</span>
+<span class="cmt"># No prompting needed.</span></pre>
+            </div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:14px; margin-bottom:20px;">
+            <div class="step-num" style="color:#34d399; background:rgba(52,211,153,0.1); border-color:rgba(52,211,153,0.25);">5</div>
+            <div>
+              <p style="font-size:14px; font-weight:600; color:#e0e0e0; margin-bottom:6px;">Query memory manually</p>
+              <pre style="font-size:12.5px; padding:12px 16px; line-height:1.8;"><span class="cmt"># Ask Claude to search memory:</span>
+"Search memory for anything related
+ to the login form double-submit bug"
+
+<span class="cmt"># Claude runs the mem-search skill:</span>
+<span class="fn">search</span>(query=<span class="str">"login form double submit"</span>)
+<span class="fn">timeline</span>(observation_id=<span class="fn">42</span>)</pre>
+            </div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:14px;">
+            <div class="step-num" style="color:#a78bfa; background:rgba(167,139,250,0.1); border-color:rgba(167,139,250,0.25);">6</div>
+            <div>
+              <p style="font-size:14px; font-weight:600; color:#e0e0e0; margin-bottom:6px;">Verify via web UI</p>
+              <pre style="font-size:12.5px; padding:12px 16px; line-height:1.8;"><span class="cmt"># Open browser</span>
+open http://localhost:37777
+
+<span class="cmt"># Browse session · search observations</span>
+<span class="cmt"># GET /api/observation/42 for raw JSON</span></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SLIDE 13 — Callout quote ── -->
+    <div class="slide slide-callout">
+      <p class="quote" style="font-size:38px; max-width:800px;">"The session ends.<br />The <em>memory doesn't.</em>"</p>
+      <p class="subtitle" style="margin-top:32px; font-size:17px;">claude-mem turns every Claude Code session into a permanent, searchable record — so the next session starts where the last one left off.</p>
+    </div>
+
+    <!-- ── SLIDE 14 — Q&A ── -->
+    <div class="slide slide-title">
+      <div class="eyebrow">Thanks</div>
+      <h1>Questions?</h1>
+      <p class="subtitle" style="margin-top:20px;">Source at <code style="font-size:16px; background:#1a1a1a; padding:4px 12px; border-radius:6px; color:#fbbf24;">github.com/thedotmack/claude-mem</code></p>
+      <div style="margin-top:32px; display:grid; grid-template-columns:1fr 1fr; gap:10px; max-width:860px;">
+        <div style="display:flex; gap:14px; align-items:center; background:#111; border:1px solid #222; border-radius:8px; padding:10px 16px;">
+          <code style="font-size:13px; color:#60a5fa;">npx claude-mem install</code>
+          <span style="color:#444; font-size:13px;">install the plugin</span>
+        </div>
+        <div style="display:flex; gap:14px; align-items:center; background:#111; border:1px solid #222; border-radius:8px; padding:10px 16px;">
+          <code style="font-size:13px; color:#60a5fa;">localhost:37777</code>
+          <span style="color:#444; font-size:13px;">web viewer</span>
+        </div>
+        <div style="display:flex; gap:14px; align-items:center; background:#111; border:1px solid #222; border-radius:8px; padding:10px 16px;">
+          <code style="font-size:13px; color:#60a5fa;">search(query="...")</code>
+          <span style="color:#444; font-size:13px;">query memory</span>
+        </div>
+        <div style="display:flex; gap:14px; align-items:center; background:#111; border:1px solid #222; border-radius:8px; padding:10px 16px;">
+          <code style="font-size:13px; color:#60a5fa;">timeline(observation_id=N)</code>
+          <span style="color:#444; font-size:13px;">chronological context</span>
+        </div>
+        <div style="display:flex; gap:14px; align-items:center; background:#111; border:1px solid #222; border-radius:8px; padding:10px 16px;">
+          <code style="font-size:13px; color:#60a5fa;">&lt;private&gt;...&lt;/private&gt;</code>
+          <span style="color:#444; font-size:13px;">exclude sensitive content</span>
+        </div>
+        <div style="display:flex; gap:14px; align-items:center; background:#111; border:1px solid #222; border-radius:8px; padding:10px 16px;">
+          <code style="font-size:13px; color:#60a5fa;">~/.claude-mem/settings.json</code>
+          <span style="color:#444; font-size:13px;">configure model &amp; port</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end .deck -->
+
+  <div class="nav">
+    <button class="nav-btn" id="prev" title="Previous (←)">‹</button>
+    <span class="nav-count" id="counter">1 / 14</span>
+    <button class="nav-btn" id="next" title="Next (→)">›</button>
+  </div>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const progress = document.getElementById('progress');
+    const counter = document.getElementById('counter');
+    const slideNum = document.getElementById('slideNum');
+    let current = 0;
+
+    function go(n) {
+      slides[current].classList.remove('active');
+      current = (n + slides.length) % slides.length;
+      slides[current].classList.add('active');
+      const pct = ((current + 1) / slides.length * 100).toFixed(1);
+      progress.style.width = pct + '%';
+      counter.textContent = (current + 1) + ' / ' + slides.length;
+      slideNum.textContent = (current + 1) + ' / ' + slides.length;
+    }
+
+    document.getElementById('next').addEventListener('click', () => go(current + 1));
+    document.getElementById('prev').addEventListener('click', () => go(current - 1));
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); go(current + 1); }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); go(current - 1); }
+      if (e.key === 'Home') go(0);
+      if (e.key === 'End') go(slides.length - 1);
+    });
+
+    let tx = 0;
+    document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; });
+    document.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - tx;
+      if (Math.abs(dx) > 40) go(dx < 0 ? current + 1 : current - 1);
+    });
+
+    go(0);
+  </script>
+</body>
+
+</html>
