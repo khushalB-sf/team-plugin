@@ -628,10 +628,10 @@ No Result pattern.
     </div>
 
     <!-- ─────────────────────────────────────── SLIDE 3 — What are plugins ── -->
-    <div class="slide slide-content">
+    <div class="slide slide-content"  style="overflow-y:auto; justify-content:flex-start;">
       <div class="eyebrow">Overview</div>
-      <h2>A plugin is one package — with three building blocks inside</h2>
-      <div class="cols cols-3" style="margin-top:8px;">
+      <h2>A plugin is one package — with four building blocks inside</h2>
+      <div class="cols cols-2" style="margin-top:8px;">
         <div class="card card-orange">
           <div style="font-size:32px; margin-bottom:12px;">🎯</div>
           <h3 style="color:#d97706;">Skills</h3>
@@ -653,13 +653,19 @@ No Result pattern.
           <p class="mt8" style="color:#555; font-size:13px;">Example: Claude controls a real browser, creates GitHub
             issues, reads Linear.</p>
         </div>
+        <div class="card card-green">
+          <div style="font-size:32px; margin-bottom:12px;">🪝</div>
+          <h3 style="color:#34d399;">Hooks</h3>
+          <p>Shell commands that run automatically on Claude Code lifecycle events — no prompt needed.</p>
+          <p class="mt8" style="color:#555; font-size:13px;">Example: run a linter after every file edit, or notify Slack when a session ends.</p>
+        </div>
       </div>
       <div class="mt24">
-        <pre style="font-size:13px; line-height:1.8;"><span class="cmt"># One plugin can have all three, or just one — your choice</span>
-commit-commands/          <span class="cmt">← 3 Commands, no MCP, no Skills</span>
+        <pre style="font-size:13px; line-height:1.8;"><span class="cmt"># One plugin can have all four, or just one — your choice</span>
+commit-commands/          <span class="cmt">← 3 Commands, no MCP, no Skills, no Hooks</span>
 playwright/               <span class="cmt">← 1 MCP server, no Commands</span>
 team-plugin/              <span class="cmt">← 1 Skill + 2 Commands, no MCP</span>
-your-plugin/              <span class="cmt">← mix whatever you need</span></pre>
+your-plugin/              <span class="cmt">← mix whatever you need (incl. Hooks)</span></pre>
       </div>
     </div>
 
@@ -700,7 +706,7 @@ plugin-dev        <span class="cmt">build your own</span></pre>
     </div>
 
     <!-- ─────────────────────────────────────── SLIDE 5 — Installing ── -->
-    <div class="slide slide-demo">
+    <div class="slide slide-demo" style="overflow-y:auto; justify-content:flex-start;">
       <div class="eyebrow blue">Installation</div>
       <h2>Installing plugins</h2>
       <div class="cols cols-2">
@@ -781,7 +787,7 @@ plugin-dev        <span class="cmt">build your own</span></pre>
 
     <!-- ─────────────────────────────────────── SLIDE 6 — Build your own ── -->
     <div class="slide slide-section">
-      <div class="badge badge-green">Bonus</div>
+      <!-- <div class="badge badge-green">Bonus</div> -->
       <h2>Build Your Own</h2>
       <div class="divider green"></div>
       <p class="quote">"Marketplace plugins are generic.<br />Your team's best practices are <em>specific.</em>"</p>
@@ -799,9 +805,11 @@ plugin-dev        <span class="cmt">build your own</span></pre>
 ├── skills/
 │   └── team-standards/
 │       └── <span class="fn">SKILL.md</span>    <span class="cmt">← auto-triggered guidance</span>
-└── commands/
-    ├── <span class="fn">standup.md</span>      <span class="cmt">← /standup</span>
-    └── <span class="fn">ticket.md</span>       <span class="cmt">← /ticket AUTH-234</span></pre>
+├── commands/
+│   ├── <span class="fn">standup.md</span>      <span class="cmt">← /standup</span>
+│   └── <span class="fn">ticket.md</span>       <span class="cmt">← /ticket AUTH-234</span>
+└── hooks/
+    └── <span class="fn">post-edit.sh</span>    <span class="cmt">← runs after every file edit</span></pre>
           <div class="mt16">
             <pre
               style="font-size:13px;"><span class="cmt"># Install for the team (copy to project plugins dir)</span>
