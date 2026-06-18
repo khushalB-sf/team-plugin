@@ -28,6 +28,18 @@ Claude applies these without being asked, on every function it writes.
 /ticket AUTH-234
 ```
 
+**`/react-team-status <start|end>`** — Records your daily status in the team's standard format.
+```bash
+/react-team-status start   # morning: today's plan, seeded by git + yesterday's carry-over
+/react-team-status end     # EOD: marks each task Done/inprogress/Yet To start, builds Tomorrow's Plan
+```
+- `start` drafts *Today's Task* from your current branch, recent commits, and yesterday's
+  *Tomorrow's Plan*, then asks you to confirm/add details.
+- `end` recalls the morning plan, infers progress from today's commits, and auto-fills
+  *Tomorrow's Plan* with whatever is still in progress or not started.
+- State is saved per day at `~/.claude/react-team-status/<YYYY-MM-DD>.md`, which is how
+  incomplete work carries forward to the next day.
+
 ---
 
 ## Installation
