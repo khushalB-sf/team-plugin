@@ -1,7 +1,7 @@
 ---
 description: Add your daily React team status — `start` for the morning plan, `end` for the EOD update
 argument-hint: [start|end]
-allowed-tools: [Bash, Read, Write]
+allowed-tools: [Bash, Read, Write, mcp__plugin_team-plugin_m365-calendar__get_todays_meetings]
 ---
 
 # React Team Daily Status
@@ -12,9 +12,9 @@ EOD run recalls the morning plan, and incomplete work carries forward to the nex
 
 ## Setup (always run first)
 
-The action requested is: **$0**
+The action requested is: **$1**
 
-1. Validate the action. If `$0` is not exactly `start` or `end`, print this and stop:
+1. Validate the action. If `$1` is not exactly `start` or `end`, print this and stop:
    ```
    Usage: /react-team-status start | end
    ```
@@ -26,7 +26,7 @@ The action requested is: **$0**
    TODAY_FILE=~/.claude/react-team-status/$TODAY.md
    ```
 
-3. Branch: if `$0` is `start`, follow **Mode: start**. If `end`, follow **Mode: end**.
+3. Branch: if `$1` is `start`, follow **Mode: start**. If `end`, follow **Mode: end**.
 
 ---
 
@@ -55,16 +55,18 @@ The action requested is: **$0**
 
    Wait for the response.
 
-4. **Ask the recurring "Others" questions** (one at a time; accept Yes/No). For each `Yes`,
-   add the corresponding line to the `Others:` section:
-   - "Do you have to attend DSM today? (Yes/No)" → `Yes` adds `- Attend DSM`
-   - "Do you have any Session today? (Yes/No)" → `Yes` adds `- Attend Session`
-   - "Anything else for Others? (e.g. team meeting, 1:1 — or None)" → add each item the user lists.
+4. **Build the `Others` list — calendar first, then ask.**
+   - Call the calendar tool `mcp__plugin_team-plugin_m365-calendar__get_todays_meetings` to read
+     today's Microsoft 365 meetings. Add each returned meeting **title** as an `Others:` line.
+   - If the tool succeeds, show the list and ask: "These are today's meetings from your calendar.
+     Add anything that isn't on it, or remove anything you'll skip."
+   - If the tool errors (e.g. "Not signed in" or the server isn't configured), fall back to the
+     manual questions and tell the user calendar sync is unavailable:
+     - "Do you have to attend DSM today? (Yes/No)" → `Yes` adds `- Attend DSM`
+     - "Do you have any Session today? (Yes/No)" → `Yes` adds `- Attend Session`
+     - "Anything else for Others? (e.g. team meeting, 1:1 — or None)" → add each item listed.
 
-   > **Future:** when a Teams/Outlook calendar integration is available, auto-answer these by
-   > reading today's calendar events instead of asking. Until then, ask interactively.
-
-   If every answer is `No`/None, omit the `Others:` section entirely.
+   If there are no meetings and nothing is added, omit the `Others:` section entirely.
 
 5. **Ask for blockers:** "Any blockers, queries, or concerns? (default: None)". Wait.
 

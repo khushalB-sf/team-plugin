@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "m365-calendar": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/m365-calendar/dist/index.js"],
+      "env": {
+        "MS_CLIENT_ID": "${MS_CLIENT_ID}",
+        "MS_TENANT_ID": "${MS_TENANT_ID}"
+      }
+    }
+  }
+}

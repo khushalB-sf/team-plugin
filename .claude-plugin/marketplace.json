@@ -1,0 +1,14 @@
+{
+  "name": "team-local",
+  "owner": {
+    "name": "Khushal Batham",
+    "email": "khushal.batham@simformsolutions.com"
+  },
+  "plugins": [
+    {
+      "name": "team-plugin",
+      "description": "Engineering team coding standards, workflow commands, and daily utilities",
+      "source": "./.claude/plugins/team-plugin"
+    }
+  ]
+}

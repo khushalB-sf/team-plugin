@@ -39,6 +39,11 @@ Claude applies these without being asked, on every function it writes.
   *Tomorrow's Plan* with whatever is still in progress or not started.
 - State is saved per day at `~/.claude/react-team-status/<YYYY-MM-DD>.md`, which is how
   incomplete work carries forward to the next day.
+- **Calendar sync (optional):** `start` auto-fills *Others* from your Microsoft 365
+  (Teams/Outlook) calendar via the bundled `m365-calendar` MCP server. Without it set up,
+  the command falls back to asking DSM/Session Yes/No. One-time setup (Azure app
+  registration + `npm install && npm run build && npm run login`) is in
+  [`mcp/m365-calendar/README.md`](mcp/m365-calendar/README.md).
 
 ---
 
